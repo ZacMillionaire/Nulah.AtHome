@@ -15,7 +15,10 @@ public class Program
 
 		builder.Services.AddControllers().AddJsonOptions(options =>
 		{
-			options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+			// Ensure properties are output in the casing they have in code without being forced to camelCase or otherwise
+			// Property is returned as Property
+			// someWeirdProperty is returned as someWeirdProperty
+			options.JsonSerializerOptions.PropertyNamingPolicy = null;
 			options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 		});
 
@@ -33,6 +36,22 @@ public class Program
 		);
 
 		builder.Services.AddTransient<EventManager>();
+
+		// If we're in development mode, the frontend will be running externally, so we'll need CORS
+		if (builder.Environment.IsDevelopment())
+		{
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy(name: builder.Configuration.GetSection("CORS:PolicyName").Value,
+					policy =>
+					{
+						policy.WithOrigins(builder.Configuration.GetSection("Api:FrontEndDomain").Value);
+						policy.AllowCredentials();
+						policy.AllowAnyHeader();
+						policy.WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch);
+					});
+			});
+		}
 
 		var app = builder.Build();
 
@@ -53,20 +72,22 @@ public class Program
 
 			app.UseSwagger();
 			app.UseSwaggerUI();
+			// If we're in development mode, the frontend will be running externally, so we'll need CORS
+			app.UseCors(builder.Configuration.GetSection("CORS:PolicyName").Value);
 		}
 #endif
 
 		app.UseHttpsRedirection();
-		
+
 		app.UseRouting();
 
 		app.UseAuthentication();
 		app.UseAuthorization();
-		
+
 		app.MapDefaultControllerRoute()
 			.RequireAuthorization()
 			.WithOpenApi();
-		
+
 		app.Run();
 	}
 }

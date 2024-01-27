@@ -19,10 +19,25 @@ public class EventController : ControllerBase
 
 	[HttpGet]
 	[Route("Get")]
-	public async Task<ActionResult<BasicEventDto>> GetEvents()
+	public async Task<ActionResult<List<BasicEventDto>>> Get()
 	{
 		var events = await _manager.GetEvents();
 
-		return new OkObjectResult(events);
+		return events;
+	}
+
+	[HttpPost]
+	[Route("Create")]
+	public async Task<ActionResult<BasicEventDto>> Create([FromBody] NewBasicEventRequest newBasicEventRequest)
+	{
+		try
+		{
+			var createdEvent = await _manager.CreateEvent(newBasicEventRequest);
+			return createdEvent;
+		}
+		catch(Exception ex)
+		{
+			return new BadRequestObjectResult(ex.Message);
+		}
 	}
 }
