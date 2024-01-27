@@ -1,5 +1,5 @@
 export interface BasicEvent {
-	Name: string;
+	Description: string;
 	Id: number;
 	Tags: string[];
 	Start: Date;

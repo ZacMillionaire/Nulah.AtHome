@@ -1,20 +1,23 @@
 <script lang="ts">
 	import { EventStore } from './EventStore';
 
-	function createEvent(e: SubmitEvent) {
-		let eventFormData = new FormData(e.target as HTMLFormElement);
+	let isLoading = false;
 
-		EventStore.add({
-			Name: eventFormData.get('name') as string,
-			Id: 3,
-			Tags: [],
-			Start: new Date(),
-			End: new Date()
-		});
+	async function createEvent(e: SubmitEvent) {
+		let eventFormData = new FormData(e.target as HTMLFormElement);
+		isLoading = true;
+
+		await EventStore.CreateEvent({
+			Description: eventFormData.get('name') as string,
+			Start: new Date()
+		})
+			.then(x =>{
+				isLoading = false;
+			});
 	}
 </script>
 
 <form on:submit|preventDefault={createEvent}>
-	<input name="name" id="name"/>
-	<button>submit</button>
+	<input name="name" id="name" />
+	<button disabled={isLoading}>submit</button>
 </form>
