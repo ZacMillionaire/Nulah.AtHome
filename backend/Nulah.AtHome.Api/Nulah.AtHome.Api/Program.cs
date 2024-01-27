@@ -32,6 +32,8 @@ public class Program
 			}
 		);
 
+		builder.Services.AddTransient<EventManager>();
+
 		var app = builder.Build();
 
 #if DEBUG
@@ -55,9 +57,16 @@ public class Program
 #endif
 
 		app.UseHttpsRedirection();
+		
+		app.UseRouting();
 
+		app.UseAuthentication();
 		app.UseAuthorization();
-
+		
+		app.MapDefaultControllerRoute()
+			.RequireAuthorization()
+			.WithOpenApi();
+		
 		app.Run();
 	}
 }
