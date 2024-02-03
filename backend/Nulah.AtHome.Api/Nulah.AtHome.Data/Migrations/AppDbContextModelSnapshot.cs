@@ -38,10 +38,10 @@ namespace Nulah.AtHome.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("End")
+                    b.Property<DateTimeOffset?>("End")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("Start")
+                    b.Property<DateTimeOffset>("Start")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("UpdatedUtc")

@@ -87,7 +87,17 @@ public class Program
 		app.MapDefaultControllerRoute()
 			.RequireAuthorization()
 			.WithOpenApi();
+		
+		// Only use files from wwwroot with fallback if we're running in non-development
+		// if (!app.Environment.IsDevelopment())
+		// {
+			app.UseDefaultFiles();
+			app.UseStaticFiles();
 
+			// required for angular spa fall back
+			app.MapFallbackToFile("/index.html");
+		// }
+		
 		app.Run();
 	}
 }

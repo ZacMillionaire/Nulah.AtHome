@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Nulah.AtHome.Data.Converters;
 using Nulah.AtHome.Data.Models;
 using Nulah.AtHome.Data.Models.Events;
 
@@ -16,7 +17,15 @@ public class AppDbContext : DbContext
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
 	{
 	}
-
+	
+	protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+	{
+		//https://github.com/npgsql/npgsql/issues/4176#issuecomment-1064250712
+		configurationBuilder
+			.Properties<DateTimeOffset>()
+			.HaveConversion<DateTimeOffsetConverter>();
+	}
+	
 	/// <summary>
 	/// Method called when building migrations from command line to create a database in a default location.
 	/// <para>

@@ -3,6 +3,8 @@
 public class NewBasicEventRequest
 {
 	public string? Description { get; set; }
-	public DateTime? Start { get; set; }
-	public DateTime? End { get; set; }
+	public DateTimeOffset? Start { get; set; }
+	public DateTimeOffset? End { get; set; }
+
+	public List<string> Tags { get; set; } = new();
 }

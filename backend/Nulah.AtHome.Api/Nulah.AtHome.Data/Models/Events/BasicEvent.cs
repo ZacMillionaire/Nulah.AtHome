@@ -8,9 +8,9 @@ internal class BasicEvent : BaseEntity
 	public string Description { get; set; } = null!;
 
 	[Required]
-	public DateTime Start { get; set; }
+	public DateTimeOffset Start { get; set; }
 
-	public DateTime? End { get; set; }
+	public DateTimeOffset? End { get; set; }
 
 	public virtual List<Tag> Tags { get; set; } = new();
 }

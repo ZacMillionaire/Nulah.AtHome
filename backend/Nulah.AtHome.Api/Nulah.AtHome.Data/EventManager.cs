@@ -43,9 +43,13 @@ public class EventManager
 
 		if (newBasicEventRequest.Start == null)
 		{
-			throw new Exception("Start cannot be null");
+			throw new Exception("Start date cannot be null");
 		}
 
+		if (newBasicEventRequest.End != null && newBasicEventRequest.Start <= newBasicEventRequest.End)
+		{
+			throw new Exception("Start date cannot be exactly on or after end date");
+		}
 
 		var newEvent = new BasicEvent()
 		{
