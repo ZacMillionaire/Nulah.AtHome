@@ -5,12 +5,26 @@
 
 	let isLoading = false;
 
-	let form: NewBasicEventRequest = {};
+	interface BasicEventRequestForm {
+		Description: string;
+		Tags: string | null;
+		Start: Date;
+		End: Date | null;
+	}
+
+	let formData: BasicEventRequestForm = {};
 
 	async function createEvent(e: SubmitEvent) {
 		isLoading = true;
 
-		await EventStore.CreateEvent(form)
+		let newEvent = {
+			Description : formData.Description,
+			Start : formData.Start,
+			End : formData.End,
+			Tags : formData.Tags?.split(",").map(x => x.trim())
+		} as NewBasicEventRequest;
+
+		await EventStore.CreateEvent(newEvent)
 			.then(x => {
 				console.log(x);
 				isLoading = false;
@@ -23,9 +37,9 @@
 </script>
 
 <form on:submit|preventDefault={createEvent}>
-	<input name="name" id="name" bind:value={form.Description} required />
-	<input type="datetime-local" name="start" bind:value={form.Start} required />
-	<input type="datetime-local" name="end" bind:value={form.End} />
-	<input type="text" name="Tags" placeholder="Comma separated tags for this event" bind:value={form.Tags} />
+	<input name="name" id="name" bind:value={formData.Description} required />
+	<input type="datetime-local" name="start" bind:value={formData.Start} required />
+	<input type="datetime-local" name="end" bind:value={formData.End} />
+	<input type="text" name="Tags" placeholder="Comma separated tags for this event" bind:value={formData.Tags} />
 	<button disabled={isLoading}>submit</button>
 </form>

@@ -1,8 +1,7 @@
 import { type Invalidator, type Subscriber, type Unsubscriber, writable } from 'svelte/store';
-import type { BasicEvent } from './models/BasicEvent';
+import { type BasicEvent } from './models/BasicEvent';
 import type { NewBasicEventRequest } from './models/NewBasicEventRequest';
 import { dev } from '$app/environment';
-import type { ErrorResponse } from 'models/ErrorResponse';
 
 export const EventStore: IEventStore = CreateEventStore();
 
@@ -20,7 +19,20 @@ function CreateEventStore(): IEventStore {
 	};
 
 	function AddNewEvent(newEvent: BasicEvent) {
-		return update(u => ([...u, newEvent]));
+		// Ensure that we have proper data types for this event as it
+		// might be from a JSON response, and for those cases dates may instead
+		// be a string and not a real date object.
+		// This is mostly likely because I'm just raw fetching without a library or anything
+		const event = {
+			Start: new Date(newEvent.Start),
+			End: newEvent.End ? new Date(newEvent.End) : null,
+			Tags: newEvent.Tags,
+			Id: newEvent.Id,
+			Description: newEvent.Description,
+			Version: newEvent.Version
+		} as BasicEvent;
+
+		return update(u => ([...u, event]));
 	}
 
 	async function GetEvents(): Promise<BasicEvent[]> {
@@ -35,7 +47,21 @@ function CreateEventStore(): IEventStore {
 		// }
 
 		return await fetch('https://localhost:7150/api/v1/Events/Get')
-			.then(async(x : Response) => await x.json() as BasicEvent[])
+			.then(async (x: Response) => (await x.json() as BasicEvent[])
+				.map((x: BasicEvent) => {
+						// parse each "BasicEvent" we received into a proper BasicEvent
+						// with correct Date objects.
+						// Otherwise Start/End will be a string representation that we received from the endpoint
+						return {
+							Start: new Date(x.Start),
+							End: x.End ? new Date(x.End) : null,
+							Tags: x.Tags,
+							Id: x.Id,
+							Description: x.Description,
+							Version: x.Version
+						} as BasicEvent;
+					}
+				) as BasicEvent[])
 			.catch(error => {
 				console.log(error);
 				return [];

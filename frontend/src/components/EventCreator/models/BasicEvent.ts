@@ -4,4 +4,5 @@ export interface BasicEvent {
 	Tags: string[] | null;
 	Start: Date;
 	End: Date | null;
+	Version : number;
 }
