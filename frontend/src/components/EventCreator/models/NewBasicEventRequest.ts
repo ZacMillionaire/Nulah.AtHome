@@ -1,6 +1,6 @@
 export interface NewBasicEventRequest {
-	Name: string;
-	Tags: string[];
+	Description: string;
+	Tags: string[] | null;
 	Start: Date;
-	End?: Date;
+	End: Date | null;
 }

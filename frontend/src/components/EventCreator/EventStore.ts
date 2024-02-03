@@ -1,6 +1,8 @@
 import { type Invalidator, type Subscriber, type Unsubscriber, writable } from 'svelte/store';
 import type { BasicEvent } from './models/BasicEvent';
 import type { NewBasicEventRequest } from './models/NewBasicEventRequest';
+import { dev } from '$app/environment';
+import type { ErrorResponse } from 'models/ErrorResponse';
 
 export const EventStore: IEventStore = CreateEventStore();
 
@@ -8,7 +10,7 @@ function CreateEventStore(): IEventStore {
 	const { subscribe, set, update } = writable<BasicEvent[]>([]);
 
 	GetEvents()
-		.then(x =>set(x));
+		.then(x => set(x));
 
 	return {
 		subscribe,
@@ -21,9 +23,19 @@ function CreateEventStore(): IEventStore {
 		return update(u => ([...u, newEvent]));
 	}
 
-	async function GetEvents() {
+	async function GetEvents(): Promise<BasicEvent[]> {
+		// if (dev) {
+		// 	return [{
+		// 		Description: 'test',
+		// 		Start: new Date(),
+		// 		Id: 0,
+		// 		Tags: null,
+		// 		End: null
+		// 	}];
+		// }
+
 		return await fetch('https://localhost:7150/api/v1/Events/Get')
-			.then((x) => x.json())
+			.then(async(x : Response) => await x.json() as BasicEvent[])
 			.catch(error => {
 				console.log(error);
 				return [];
@@ -31,6 +43,19 @@ function CreateEventStore(): IEventStore {
 	}
 
 	async function CreateEvent(newEventDescription: NewBasicEventRequest) {
+
+		// if (dev) {
+		// 	AddNewEvent({
+		// 		Description: newEventDescription.Description,
+		// 		Start: newEventDescription.Start,
+		// 		End: newEventDescription.End,
+		// 		Id: 0,
+		// 		Tags: newEventDescription.Tags
+		// 	});
+		// 	return;
+		// }
+
+
 		const headers: Headers = new Headers();
 		headers.set('Content-Type', 'application/json');
 		// We also need to set the `Accept` header to `application/json`
@@ -48,24 +73,17 @@ function CreateEventStore(): IEventStore {
 		// Send the request and print the response
 		// TODO: create a strong type for this so it returns something other than Response
 		const createResult = await fetch(request)
-			.then(res => {
+			.then(async res => {
 				if (res.ok) {
-					return res.json();
+					return await res.json() as BasicEvent;
 				}
-				// TODO: clean this up
-				throw new Error(`${res.status}`);
+				throw new Error(JSON.stringify(await res.json()));
 			}, rejected => {
 				console.error(rejected);
-			})
-			.catch(error => {
-				console.log(error);
-				return null;
 			});
 
-		console.log(createResult);
-
 		if (createResult !== null) {
-			AddNewEvent(createResult);
+			AddNewEvent(createResult as BasicEvent);
 		}
 	}
 }
@@ -73,6 +91,6 @@ function CreateEventStore(): IEventStore {
 export interface IEventStore {
 	add: (newEvent: BasicEvent) => void;
 	subscribe: (this: void, run: Subscriber<BasicEvent[]>, invalidate?: Invalidator<BasicEvent[]>) => Unsubscriber;
-	GetEvents: () => Promise<void>;
-	CreateEvent: (newEventDescription: NewBasicEventRequest) => Promise<void>;
+	GetEvents: () => Promise<BasicEvent[]>;
+	CreateEvent: (newEventDescription: NewBasicEventRequest) => Promise<void | BasicEvent | Error>;
 }

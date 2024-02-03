@@ -6,8 +6,8 @@
 
 <div>
 	<h1>{Event.Description}</h1>
-	<span>Start: {Event.Start}</span>
+	<span>Start: {new Date(Event.Start).toLocaleString()}</span>
 	{#if Event.End}
-		<span>End: {Event.End}</span>
+		<span>End: {new Date(Event.End)?.toLocaleString()}</span>
 	{/if}
 </div>
