@@ -71,7 +71,7 @@ public class EventController : ControllerBase
 			});
 		}
 
-		if (newBasicEventRequest.End != null && newBasicEventRequest.Start <= newBasicEventRequest.End)
+		if (newBasicEventRequest.End != null && newBasicEventRequest.End <= newBasicEventRequest.Start)
 		{
 			errors.AddRange(new[]
 			{

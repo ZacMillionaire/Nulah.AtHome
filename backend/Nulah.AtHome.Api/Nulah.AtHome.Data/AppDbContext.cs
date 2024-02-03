@@ -26,6 +26,47 @@ public class AppDbContext : DbContext
 			.HaveConversion<DateTimeOffsetConverter>();
 	}
 	
+	public override int SaveChanges()
+	{
+		SetCreatedUpdatedForSavingEntities();
+		return base.SaveChanges();
+	}
+
+	public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+	{
+		SetCreatedUpdatedForSavingEntities();
+		return base.SaveChangesAsync(cancellationToken);
+	}
+
+	public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+	{
+		SetCreatedUpdatedForSavingEntities();
+		return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+	}
+
+	private void SetCreatedUpdatedForSavingEntities()
+	{
+		var entries = ChangeTracker
+			.Entries()
+			.Where(e => e.Entity is BaseEntity
+			            && (e.State == EntityState.Added
+			                || e.State == EntityState.Modified)
+			);
+
+		// Entities added/modified in the same batch should have identical timestamps
+		var nowUtc = DateTime.UtcNow;
+
+		foreach (var entityEntry in entries)
+		{
+			((BaseEntity)entityEntry.Entity).UpdatedUtc = nowUtc;
+
+			if (entityEntry.State == EntityState.Added)
+			{
+				((BaseEntity)entityEntry.Entity).CreatedUtc = nowUtc;
+			}
+		}
+	}
+	
 	/// <summary>
 	/// Method called when building migrations from command line to create a database in a default location.
 	/// <para>
