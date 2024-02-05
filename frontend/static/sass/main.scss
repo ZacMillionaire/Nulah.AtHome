@@ -1,0 +1,14 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+*, *:before, *:after {
+  /* Stay in your damn containers */
+  box-sizing: border-box;
+}
+
+.site-container {
+  margin: 0 auto;
+}
