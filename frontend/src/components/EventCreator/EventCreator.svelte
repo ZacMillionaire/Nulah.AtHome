@@ -1,17 +1,10 @@
 <script lang="ts">
-	import { EventStore } from './EventStore';
-	import type { NewBasicEventRequest } from './models/NewBasicEventRequest';
 	import type { ErrorResponse } from 'models/ErrorResponse';
 	import ValidationError from '../Form/ValidationError.svelte';
+	import type { EventRequestFormModel } from './models/EventRequestFormModel';
+	import type { BasicEvent } from './models/BasicEvent';
 
 	let isLoading = false;
-
-	interface BasicEventRequestForm {
-		Description: string;
-		Tags: string | null;
-		Start: Date;
-		End: Date | null;
-	}
 
 	interface FormErrors {
 		[field: string]: string[];
@@ -26,7 +19,9 @@
 		End: []
 	};
 
-	let formData: BasicEventRequestForm = {};
+	export let formData: EventRequestFormModel = {};
+
+	export let formSubmitAction : (newEventDescription: EventRequestFormModel) => Promise<void | BasicEvent | Error>;
 
 	let startInput: HTMLInputElement;
 	let endInput: HTMLInputElement;
@@ -41,20 +36,10 @@
 		inputTarget.dispatchEvent(new Event('input'));
 	}
 
-	async function createEvent(e: SubmitEvent) {
+	async function formSubmit() {
 		isLoading = true;
 
-		let newEvent = {
-			Description: formData.Description,
-			Start: new Date(formData.Start),
-			// Make sure that if a user has cleared a form value that we correctly get a null
-			// instead of the empty string it will receive.
-			// We don't need to do it for Start so long as it is tagged as required in the markup.
-			End: formData.End ? new Date(formData.End) : null,
-			Tags: formData.Tags?.split(',').map(x => x.trim())
-		} as NewBasicEventRequest;
-
-		await EventStore.CreateEvent(newEvent)
+		await formSubmitAction(formData)
 			.then(x => {
 				console.log(x);
 				isLoading = false;
@@ -89,7 +74,7 @@
     padding: 5px;
     margin: 5px;
     min-width: var(--column-width);
-    box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.15);
+    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.15);
 
     .form-button {
       &.shrink {
@@ -121,7 +106,7 @@
 </style>
 
 <div class="event-form">
-	<form on:submit|preventDefault={createEvent}>
+	<form on:submit|preventDefault={formSubmit}>
 		<div class="form-row">
 			<input name="name" id="name" bind:value={formData.Description} required />
 		</div>
