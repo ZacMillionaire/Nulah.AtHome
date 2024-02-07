@@ -2,6 +2,7 @@
 using Nulah.AtHome.Api.Models;
 using Nulah.AtHome.Data;
 using Nulah.AtHome.Data.DTO;
+using Nulah.AtHome.Data.DTO.Events;
 
 namespace Nulah.AtHome.Api.Api.v1;
 
@@ -49,7 +50,29 @@ public class EventController : ControllerBase
 		}
 	}
 
-	private List<ErrorResponse> ValidateNewEvent(NewBasicEventRequest newBasicEventRequest)
+	[HttpPost]
+	[Route("Update")]
+	public async Task<IActionResult> Update([FromBody] UpdateBasicEventRequest updateBasicEventRequest)
+	{
+		var validationErrors = ValidateNewEvent(updateBasicEventRequest);
+
+		if (validationErrors.Count > 0)
+		{
+			return new BadRequestObjectResult(validationErrors);
+		}
+
+		try
+		{
+			var createdEvent = await _manager.UpdateEvent(updateBasicEventRequest);
+			return Ok(createdEvent);
+		}
+		catch (Exception ex)
+		{
+			return new BadRequestObjectResult(ex.Message);
+		}
+	}
+
+	private List<ErrorResponse> ValidateNewEvent(BasicEventRequest newBasicEventRequest)
 	{
 		var errors = new List<ErrorResponse>();
 
@@ -57,7 +80,7 @@ public class EventController : ControllerBase
 		{
 			errors.Add(new ErrorResponse()
 			{
-				Name = nameof(NewBasicEventRequest.Description),
+				Name = nameof(BasicEventRequest.Description),
 				Description = "Description cannot be null"
 			});
 		}
@@ -66,7 +89,7 @@ public class EventController : ControllerBase
 		{
 			errors.Add(new ErrorResponse()
 			{
-				Name = nameof(NewBasicEventRequest.Start),
+				Name = nameof(BasicEventRequest.Start),
 				Description = "Start date cannot be null"
 			});
 		}
@@ -77,12 +100,12 @@ public class EventController : ControllerBase
 			{
 				new ErrorResponse()
 				{
-					Name = nameof(NewBasicEventRequest.Start),
+					Name = nameof(BasicEventRequest.Start),
 					Description = "Start date cannot be exactly on or after end date"
 				},
 				new ErrorResponse()
 				{
-					Name = nameof(NewBasicEventRequest.End),
+					Name = nameof(BasicEventRequest.End),
 					Description = "End date cannot be exactly on or before start date"
 				}
 			});

@@ -1,10 +1,6 @@
-﻿namespace Nulah.AtHome.Data.DTO;
+﻿namespace Nulah.AtHome.Data.DTO.Events;
 
-public class NewBasicEventRequest
+public class NewBasicEventRequest: BasicEventRequest
 {
-	public string? Description { get; set; }
-	public DateTimeOffset? Start { get; set; }
-	public DateTimeOffset? End { get; set; }
 
-	public List<string> Tags { get; set; } = new();
 }

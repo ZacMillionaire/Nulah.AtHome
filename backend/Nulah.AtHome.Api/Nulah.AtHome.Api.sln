@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.Api", "Nulah.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.Data", "Nulah.AtHome.Data\Nulah.AtHome.Data.csproj", "{4295A183-2A5D-4CE0-B240-B4BC9826BEE7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{78422028-D9A6-41F4-9217-9513F75AC746}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.UnitTests", "Nulah.AtHome.UnitTests\Nulah.AtHome.UnitTests.csproj", "{920AE5BE-917E-4A76-9944-BDB5288457C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,12 @@ Global
 		{4295A183-2A5D-4CE0-B240-B4BC9826BEE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4295A183-2A5D-4CE0-B240-B4BC9826BEE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4295A183-2A5D-4CE0-B240-B4BC9826BEE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{920AE5BE-917E-4A76-9944-BDB5288457C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{920AE5BE-917E-4A76-9944-BDB5288457C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{920AE5BE-917E-4A76-9944-BDB5288457C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{920AE5BE-917E-4A76-9944-BDB5288457C3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{920AE5BE-917E-4A76-9944-BDB5288457C3} = {78422028-D9A6-41F4-9217-9513F75AC746}
 	EndGlobalSection
 EndGlobal

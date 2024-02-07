@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nulah.AtHome.Data.DTO;
+using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models.Events;
 
 namespace Nulah.AtHome.Data;
@@ -36,20 +37,7 @@ public class EventManager
 
 	public async Task<BasicEventDto> CreateEvent(NewBasicEventRequest newBasicEventRequest)
 	{
-		if (string.IsNullOrWhiteSpace(newBasicEventRequest.Description))
-		{
-			throw new Exception("Description cannot be null");
-		}
-
-		if (newBasicEventRequest.Start == null)
-		{
-			throw new Exception("Start date cannot be null");
-		}
-
-		if (newBasicEventRequest.End != null && newBasicEventRequest.End <= newBasicEventRequest.Start)
-		{
-			throw new Exception("Start date cannot be exactly on or after end date");
-		}
+		ValidateBasicEventRequest(newBasicEventRequest);
 
 		var newEvent = new BasicEvent()
 		{
@@ -73,5 +61,51 @@ public class EventManager
 			CreatedUtc = newEvent.CreatedUtc,
 			UpdatedUtc = newEvent.UpdatedUtc
 		};
+	}
+
+	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest updateBasicEventRequest)
+	{
+		ValidateBasicEventRequest(updateBasicEventRequest);
+
+		var newEvent = new BasicEvent()
+		{
+			Description = updateBasicEventRequest.Description,
+			Start = updateBasicEventRequest.Start.Value,
+			End = updateBasicEventRequest.End,
+		};
+
+		_context.BasicEvents.Add(newEvent);
+
+		await _context.SaveChangesAsync();
+
+		return new BasicEventDto()
+		{
+			Description = newEvent.Description,
+			End = newEvent.End,
+			Id = newEvent.Id,
+			Start = newEvent.Start,
+			//Tags =
+			Version = newEvent.Version,
+			CreatedUtc = newEvent.CreatedUtc,
+			UpdatedUtc = newEvent.UpdatedUtc
+		};
+	}
+
+	private void ValidateBasicEventRequest(BasicEventRequest eventRequest)
+	{
+		if (string.IsNullOrWhiteSpace(eventRequest.Description))
+		{
+			throw new Exception("Description cannot be null");
+		}
+
+		if (eventRequest.Start == null)
+		{
+			throw new Exception("Start date cannot be null");
+		}
+
+		if (eventRequest.End != null && eventRequest.End <= eventRequest.Start)
+		{
+			throw new Exception("Start date cannot be exactly on or after end date");
+		}
 	}
 }
