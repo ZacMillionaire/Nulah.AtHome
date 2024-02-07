@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Nulah.AtHome.Data.DTO;
 using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models.Events;
 
@@ -41,8 +40,8 @@ public class EventManager
 
 		var newEvent = new BasicEvent()
 		{
-			Description = newBasicEventRequest.Description,
-			Start = newBasicEventRequest.Start.Value,
+			Description = newBasicEventRequest.Description!,
+			Start = newBasicEventRequest.Start!.Value,
 			End = newBasicEventRequest.End,
 		};
 
@@ -65,12 +64,13 @@ public class EventManager
 
 	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest updateBasicEventRequest)
 	{
+		throw new NotImplementedException();
 		ValidateBasicEventRequest(updateBasicEventRequest);
 
 		var newEvent = new BasicEvent()
 		{
-			Description = updateBasicEventRequest.Description,
-			Start = updateBasicEventRequest.Start.Value,
+			Description = updateBasicEventRequest.Description!,
+			Start = updateBasicEventRequest.Start!.Value,
 			End = updateBasicEventRequest.End,
 		};
 

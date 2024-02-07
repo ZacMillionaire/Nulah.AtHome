@@ -14,9 +14,71 @@ public class CreateBasicEventTests : TestBase<CreateBasicEventFixture>
 	{
 	}
 
+	[Fact]
+	public async void DescriptionRequired()
+	{
+		var exception = await Assert.ThrowsAsync<Exception>(async () =>
+		{
+			await TestFixture.CreateBasicEvent(new NewBasicEventRequest()
+			{
+			});
+		});
+
+		Assert.Equal("Description cannot be null", exception.Message);
+	}
+
+	[Fact]
+	public async void StartRequired()
+	{
+		var exception = await Assert.ThrowsAsync<Exception>(async () =>
+		{
+			await TestFixture.CreateBasicEvent(new NewBasicEventRequest()
+			{
+				Description = "Test Description"
+			});
+		});
+
+		Assert.Equal("Start date cannot be null", exception.Message);
+	}
+
+	[Fact]
+	public async void StartDateCannotEqualEndDate()
+	{
+		var exception = await Assert.ThrowsAsync<Exception>(async () =>
+		{
+			var now = DateTimeOffset.Now;
+			await TestFixture.CreateBasicEvent(new NewBasicEventRequest()
+			{
+				Description = "Test Description",
+				Start = now,
+				End = now,
+			});
+		});
+
+		Assert.Equal("Start date cannot be exactly on or after end date", exception.Message);
+	}
+
+	[Fact]
+	public async void StartDateCannotExceedEndDate()
+	{
+		var rand = new Random();
+
+		var exception = await Assert.ThrowsAsync<Exception>(async () =>
+		{
+			await TestFixture.CreateBasicEvent(new NewBasicEventRequest()
+			{
+				Description = "Test Description",
+				Start = DateTimeOffset.Now.AddDays(1),
+				End = DateTimeOffset.Now,
+			});
+		});
+
+		Assert.Equal("Start date cannot be exactly on or after end date", exception.Message);
+	}
+
 	[Theory]
 	[MemberData(nameof(CreateBasicEventFixture.EventsToCreate), MemberType = typeof(CreateBasicEventFixture))]
-	public async void CreateValidTests((string description, DateTimeOffset startDate, DateTimeOffset? endDate, List<string>? tags) testData)
+	public async void CreateValidEvents((string description, DateTimeOffset startDate, DateTimeOffset? endDate, List<string>? tags) testData)
 	{
 		var createdBasicEvent = await TestFixture.CreateBasicEvent(new NewBasicEventRequest()
 		{
@@ -57,7 +119,8 @@ public class CreateBasicEventFixture : DatabaseBackedTestFixture
 	public static TheoryData<(string description, DateTimeOffset startDate, DateTimeOffset? endDate, List<string>? tags)> EventsToCreate() => new()
 	{
 		("Test Description", DateTimeOffset.Now, null, null),
-		("A description", DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1), null)
+		("A description", DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1), null),
+		("A description for longer text", DateTimeOffset.Now.AddMinutes(1), DateTimeOffset.Now.AddDays(1), null),
 	};
 
 	public async Task<BasicEventDto> CreateBasicEvent(NewBasicEventRequest basicEventRequest)
