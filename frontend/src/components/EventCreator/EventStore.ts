@@ -72,37 +72,45 @@ function CreateEventStore(): IEventStore {
 			Tags: newEventDescription.Tags?.split(',').map(x => x.trim())
 		} as NewBasicEventRequest;
 
-		const headers: Headers = new Headers();
-		headers.set('Content-Type', 'application/json');
-		// We also need to set the `Accept` header to `application/json`
-		// to tell the server that we expect JSON in response
-		headers.set('Accept', 'application/json');
-
-		const request: RequestInfo = new Request('https://localhost:7150/api/v1/Events/Create', {
-			// We need to set the `method` to `POST` and assign the headers
-			method: 'POST',
-			headers: headers,
-			// Convert the user object to JSON and pass it as the body
-			body: JSON.stringify(newEvent)
-		});
-
-		// Send the request and print the response
-		const createResult = await fetch(request)
-			.then(async res => {
-				if (res.ok) {
-					return await res.json() as BasicEvent;
-				}
-				throw new Error(JSON.stringify(await res.json()));
-			}, rejected => {
-				console.error(rejected);
-			});
+		const createResult = await PostRequestAsync<NewBasicEventRequest, BasicEvent>(
+			'https://localhost:7150/api/v1/Events/Create',
+			newEvent
+		);
 
 		if (createResult !== null) {
 			AddNewEvent(createResult as BasicEvent);
 		}
 	}
 
+	async function PostRequestAsync<TReq, TRes>(requestUri: string, requestObject: TReq): Promise<void | TRes> {
+
+		const headers: Headers = new Headers();
+		headers.set('Content-Type', 'application/json');
+		// We also need to set the `Accept` header to `application/json`
+		// to tell the server that we expect JSON in response
+		headers.set('Accept', 'application/json');
+
+		const request: RequestInfo = new Request(requestUri, {
+			// We need to set the `method` to `POST` and assign the headers
+			method: 'POST',
+			headers: headers,
+			// Convert the user object to JSON and pass it as the body
+			body: JSON.stringify(requestObject)
+		});
+
+		const requestResult = fetch(request)
+			.then(async res => {
+				if (res.ok) {
+					return await res.json() as TRes;
+				}
+				throw new Error(JSON.stringify(await res.json()));
+			});
+
+		return requestResult;
+	}
+
 	async function UpdateEvent(updateBasicEventRequest: EventRequestFormModel) {
+
 		const updatedEvent = {
 			Id: updateBasicEventRequest.Id,
 			Version: updateBasicEventRequest.Version,
@@ -115,14 +123,18 @@ function CreateEventStore(): IEventStore {
 			Tags: updateBasicEventRequest.Tags?.split(',').map(x => x.trim())
 		} as UpdateBasicEventRequest;
 
-		console.log(updatedEvent);
+		console.log('Updating event to send to backend:', updatedEvent);
 
+		const updatedResult = await PostRequestAsync<UpdateBasicEventRequest, BasicEvent>(
+			'https://localhost:7150/api/v1/Events/Update',
+			updatedEvent
+		);
 		// TODO: send update request to backend and essentially replicate the new event implementation above
 
 		update(u => {
-			console.log(u);
+			console.log('Looking for event to update in store', u);
 			let updateTarget = u.find(x => x.Id === updatedEvent.Id);
-			console.log(updateTarget);
+			console.log('Found item to update', updateTarget);
 			// TODO: update the target item with the response from the server
 
 			return u;

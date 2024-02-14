@@ -14,6 +14,7 @@
 
 	// bind the above into a reactive state using svelte syntax
 	$: formErrors = {
+		Server : [],
 		Description: [],
 		Start: [],
 		End: []
@@ -21,7 +22,7 @@
 
 	export let formData: EventRequestFormModel = {};
 
-	export let formSubmitAction : (newEventDescription: EventRequestFormModel) => Promise<void | BasicEvent | Error>;
+	export let formSubmitAction: (newEventDescription: EventRequestFormModel) => Promise<void | BasicEvent | Error>;
 
 	let startInput: HTMLInputElement;
 	let endInput: HTMLInputElement;
@@ -45,10 +46,25 @@
 				isLoading = false;
 			})
 			.catch((error: Error) => {
-				const errorResponse = JSON.parse(error.message) as ErrorResponse[];
+				// This can be an array or string as internal server errors or other
+				const parsedResponse = JSON.parse(error.message) as ErrorResponse[] | string;
+				let errorResponse: ErrorResponse[] = [];
+				
+				// This block of code is a bit dumb but the parsed response might be a server
+				// error which might not be returned in an ErrorResponse (nor will it ever) for reasons
+				// such as not wanting to hide exceptions via middleware wrapping it in the backend.
+				if (typeof parsedResponse === 'string') {
+					errorResponse = [{
+						Name: 'Server',
+						Description: parsedResponse as string
+					}];
+				} else {
+					errorResponse = parsedResponse as ErrorResponse[];
+				}
 
 				// This is a dumb way to clear it but whatever
 				formErrors = {
+					Server: [],
 					Description: [],
 					Start: [],
 					End: []
@@ -57,6 +73,7 @@
 				errorResponse.forEach(x => {
 					formErrors[x.Name].push(x.Description);
 				});
+
 
 				isLoading = false;
 			});
@@ -106,6 +123,7 @@
 </style>
 
 <div class="event-form">
+	<ValidationError Errors="{formErrors.Server}" />
 	<form on:submit|preventDefault={formSubmit}>
 		<div class="form-row">
 			<input name="name" id="name" bind:value={formData.Description} required />
