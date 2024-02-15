@@ -31,6 +31,8 @@ public class EventManager
 				CreatedUtc = x.CreatedUtc,
 				UpdatedUtc = x.UpdatedUtc
 			})
+			// Order by the start date with newest at the top
+			.OrderByDescending(x => x.Start)
 			.ToListAsync();
 	}
 
