@@ -14,7 +14,7 @@
 
 	// bind the above into a reactive state using svelte syntax
 	$: formErrors = {
-		Server : [],
+		Server: [],
 		Description: [],
 		Start: [],
 		End: []
@@ -23,11 +23,15 @@
 	export let formData: EventRequestFormModel = {};
 
 	export let formSubmitAction: (newEventDescription: EventRequestFormModel) => Promise<void | BasicEvent | Error>;
+	/**
+	 * Called when formSubmitAction succeeds
+	 */
+	export let onSuccessCallback: (basicEvent: BasicEvent) => void = null;
 
 	let startInput: HTMLInputElement;
 	let endInput: HTMLInputElement;
 
-	function setDateToNow(inputTarget: HTMLInputElement) {
+	function setDateToNow(inputTarget: HTMLInputElement): void {
 		const now = new Date();
 		now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
 		inputTarget.value = now.toISOString().slice(0, 16);
@@ -37,19 +41,34 @@
 		inputTarget.dispatchEvent(new Event('input'));
 	}
 
-	async function formSubmit() {
+	async function formSubmit(): Promise<void> {
 		isLoading = true;
 
+		// This is a dumb way to clear errors it but whatever
+		formErrors = {
+			Server: [],
+			Description: [],
+			Start: [],
+			End: []
+		};
+
 		await formSubmitAction(formData)
-			.then(x => {
-				console.log(x);
+			.then((eventResult: void | BasicEvent | Error) => {
 				isLoading = false;
+
+				if (onSuccessCallback) {
+					onSuccessCallback(eventResult as BasicEvent);
+				}
+
+				// clear the form
+				formData = {};
 			})
 			.catch((error: Error) => {
+				console.log(error);
 				// This can be an array or string as internal server errors or other
 				const parsedResponse = JSON.parse(error.message) as ErrorResponse[] | string;
 				let errorResponse: ErrorResponse[] = [];
-				
+
 				// This block of code is a bit dumb but the parsed response might be a server
 				// error which might not be returned in an ErrorResponse (nor will it ever) for reasons
 				// such as not wanting to hide exceptions via middleware wrapping it in the backend.
@@ -62,18 +81,9 @@
 					errorResponse = parsedResponse as ErrorResponse[];
 				}
 
-				// This is a dumb way to clear it but whatever
-				formErrors = {
-					Server: [],
-					Description: [],
-					Start: [],
-					End: []
-				};
-
 				errorResponse.forEach(x => {
 					formErrors[x.Name].push(x.Description);
 				});
-
 
 				isLoading = false;
 			});

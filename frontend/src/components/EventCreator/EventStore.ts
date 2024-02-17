@@ -80,6 +80,8 @@ function CreateEventStore(): IEventStore {
 		if (createResult !== null) {
 			AddNewEvent(createResult as BasicEvent);
 		}
+
+		return createResult;
 	}
 
 	async function PostRequestAsync<TReq, TRes>(requestUri: string, requestObject: TReq): Promise<void | TRes> {
@@ -123,8 +125,6 @@ function CreateEventStore(): IEventStore {
 			Tags: updateBasicEventRequest.Tags?.split(',').map(x => x.trim())
 		} as UpdateBasicEventRequest;
 
-		console.log('Updating event to send to backend:', updatedEvent);
-
 		const updatedResult = await PostRequestAsync<UpdateBasicEventRequest, BasicEvent>(
 			'https://localhost:7150/api/v1/Events/Update',
 			updatedEvent
@@ -132,13 +132,14 @@ function CreateEventStore(): IEventStore {
 		// TODO: send update request to backend and essentially replicate the new event implementation above
 
 		update(u => {
-			console.log('Looking for event to update in store', u);
 			let updateTarget = u.find(x => x.Id === updatedEvent.Id);
-			console.log('Found item to update', updateTarget);
+			//console.log('Found item to update', updateTarget);
 			// TODO: update the target item with the response from the server
 
 			return u;
 		});
+
+		return updatedResult;
 	}
 }
 

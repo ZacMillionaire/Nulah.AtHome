@@ -3,9 +3,14 @@
 	import EventCreator from './EventCreator.svelte';
 	import type { EventRequestFormModel } from './models/EventRequestFormModel';
 	import { EventStore } from './EventStore';
+	import { onMount } from 'svelte';
 
 	export let Event: BasicEvent;
 	let editMode: boolean = false;
+
+	onMount(() => {
+		setFormData(Event);
+	});
 
 	function formatDateToString(inputDate?: Date | null): string | null {
 		if (!inputDate) {
@@ -20,14 +25,26 @@
 		return d.toISOString().slice(0, 16);
 	}
 
-	let formData: EventRequestFormModel = {
-		Id : Event.Id,
-		Version : Event.Version,
-		Description: Event.Description,
-		Start: formatDateToString(Event.Start)!,
-		End: formatDateToString(Event.End),
-		Tags: Event.Tags?.join(', ') ?? null
-	};
+	function setFormData(event: BasicEvent): void {
+		formData = {
+			Id: event.Id,
+			Version: event.Version,
+			Description: event.Description,
+			Start: formatDateToString(event.Start)!,
+			End: formatDateToString(event.End),
+			Tags: event.Tags?.join(', ') ?? null
+		};
+	}
+
+	let formData: EventRequestFormModel = {};
+
+	function onUpdateSuccess(updatedEvent: BasicEvent): void {
+
+		// Syncronise the edit model to the response received from the server
+		setFormData(updatedEvent);
+
+		editMode = false;
+	}
 
 </script>
 
@@ -55,6 +72,7 @@
 		<div>End: {Event.End?.toLocaleString()}</div>
 	{/if}
 	{#if editMode}
-		<EventCreator formData="{formData}" formSubmitAction="{EventStore.UpdateEvent}" />
+		<EventCreator formData="{formData}" formSubmitAction="{EventStore.UpdateEvent}"
+									onSuccessCallback="{onUpdateSuccess}" />
 	{/if}
 </div>
