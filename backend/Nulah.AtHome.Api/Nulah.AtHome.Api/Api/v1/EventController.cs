@@ -68,6 +68,7 @@ public class EventController : ControllerBase
 		}
 		catch (Exception ex)
 		{
+			// TODO: wrap this exception in an error response
 			return new BadRequestObjectResult(ex.Message);
 		}
 	}

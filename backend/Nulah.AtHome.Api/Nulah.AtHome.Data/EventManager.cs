@@ -57,6 +57,7 @@ public class EventManager
 			End = newEvent.End,
 			Id = newEvent.Id,
 			Start = newEvent.Start,
+			// TODO
 			//Tags =
 			Version = newEvent.Version,
 			CreatedUtc = newEvent.CreatedUtc,
@@ -66,30 +67,36 @@ public class EventManager
 
 	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest updateBasicEventRequest)
 	{
-		throw new NotImplementedException();
 		ValidateBasicEventRequest(updateBasicEventRequest);
 
-		var newEvent = new BasicEvent()
+		var existingEvent = await _context.BasicEvents
+			.FirstOrDefaultAsync(x => x.Id == updateBasicEventRequest.Id);
+
+		if (existingEvent == null)
 		{
-			Description = updateBasicEventRequest.Description!,
-			Start = updateBasicEventRequest.Start!.Value,
-			End = updateBasicEventRequest.End,
-		};
+			throw new Exception($"No event found with the id of {updateBasicEventRequest.Id}");
+		}
 
-		_context.BasicEvents.Add(newEvent);
+		existingEvent.Description = updateBasicEventRequest.Description!;
+		existingEvent.Start = updateBasicEventRequest.Start!.Value;
+		existingEvent.End = updateBasicEventRequest.End;
+		existingEvent.Id = existingEvent.Id;
+		// TODO
+		//existingEvent.Tags = updateBasicEventRequest.Tags,
 
+		// If the event is updated elsewhere this will throw a concurrency error
 		await _context.SaveChangesAsync();
 
 		return new BasicEventDto()
 		{
-			Description = newEvent.Description,
-			End = newEvent.End,
-			Id = newEvent.Id,
-			Start = newEvent.Start,
+			Description = existingEvent.Description,
+			End = existingEvent.End,
+			Id = existingEvent.Id,
+			Start = existingEvent.Start,
 			//Tags =
-			Version = newEvent.Version,
-			CreatedUtc = newEvent.CreatedUtc,
-			UpdatedUtc = newEvent.UpdatedUtc
+			Version = existingEvent.Version,
+			CreatedUtc = existingEvent.CreatedUtc,
+			UpdatedUtc = existingEvent.UpdatedUtc
 		};
 	}
 
