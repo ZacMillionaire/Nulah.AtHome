@@ -32,7 +32,7 @@
 			Description: event.Description,
 			Start: formatDateToString(event.Start)!,
 			End: formatDateToString(event.End),
-			Tags: event.Tags?.join(', ') ?? null
+			Tags: event.Tags?.map(x => x.Name).join(', ') ?? null
 		};
 	}
 
@@ -66,10 +66,17 @@
 
 <div class="event">
 	<h1>{Event.Description}</h1>
-	<button on:click={() => (editMode = true)}>edit</button>
-	<div>Start: {Event.Start.toLocaleString()}</div>
-	{#if Event.End}
-		<div>End: {Event.End?.toLocaleString()}</div>
+	{#if !editMode}
+		<button on:click={() => (editMode = true)}>edit</button>
+		<div>Start: {Event.Start.toLocaleString()}</div>
+		{#if Event.End}
+			<div>End: {Event.End?.toLocaleString()}</div>
+		{/if}
+		{#if Event.Tags}
+			<div>
+				{Event.Tags.map(x => x.Name).join(', ')}
+			</div>
+		{/if}
 	{/if}
 	{#if editMode}
 		<EventCreator formData="{formData}" formSubmitAction="{EventStore.UpdateEvent}"

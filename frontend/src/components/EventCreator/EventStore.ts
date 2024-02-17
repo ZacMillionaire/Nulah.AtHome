@@ -129,15 +129,20 @@ function CreateEventStore(): IEventStore {
 			'https://localhost:7150/api/v1/Events/Update',
 			updatedEvent
 		);
-		// TODO: send update request to backend and essentially replicate the new event implementation above
 
-		update(u => {
-			let updateTarget = u.find(x => x.Id === updatedEvent.Id);
-			//console.log('Found item to update', updateTarget);
-			// TODO: update the target item with the response from the server
+		if (updatedResult) {
+			update((u: BasicEvent[]) => {
+				// This feels like a dumb way to update the item in an array?
+				const updateTarget = u.find(x => x.Id === updatedEvent.Id);
 
-			return u;
-		});
+				if (updateTarget) {
+					const idx = u.indexOf(updateTarget);
+					u[idx] = updatedResult;
+				}
+
+				return u;
+			});
+		}
 
 		return updatedResult;
 	}
