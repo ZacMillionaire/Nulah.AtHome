@@ -5,21 +5,31 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1"/>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="8.0.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="8.0.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Nulah.AtHome.Data\Nulah.AtHome.Data.csproj" />
+        <ProjectReference Include="..\Nulah.AtHome.Data\Nulah.AtHome.Data.csproj"/>
+    </ItemGroup>
+
+    <!-- exclude these from being published but still included in builds when running locally -->
+    <!-- https://stackoverflow.com/questions/42712055/asp-net-core-exclude-or-include-files-on-publish -->
+    <ItemGroup>
+        <!-- will be created by frontend builds -->
+        <Content Update="wwwroot\**\*" CopyToPublishDirectory="Never"/>
+        <!-- excludes all appsettings apart from the base appsettings.json -->
+        <Content Update="appsettings.*.json" CopyToPublishDirectory="Never"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="wwwroot\" />
+        <Folder Include="wwwroot\"/>
     </ItemGroup>
 
 </Project>

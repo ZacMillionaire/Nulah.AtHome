@@ -8,6 +8,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{78422028
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.UnitTests", "Nulah.AtHome.UnitTests\Nulah.AtHome.UnitTests.csproj", "{920AE5BE-917E-4A76-9944-BDB5288457C3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{608587E5-BFCB-4BE3-BFA4-EC1B7DD033CA}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\.dockerignore = ..\..\.dockerignore
+		..\..\Dockerfile = ..\..\Dockerfile
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

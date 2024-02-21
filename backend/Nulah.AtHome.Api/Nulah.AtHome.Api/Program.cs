@@ -77,7 +77,9 @@ public class Program
 		}
 #endif
 
+#if DEBUG
 		app.UseHttpsRedirection();
+#endif
 
 		app.UseRouting();
 
@@ -87,17 +89,19 @@ public class Program
 		app.MapDefaultControllerRoute()
 			.RequireAuthorization()
 			.WithOpenApi();
-		
+
 		// Only use files from wwwroot with fallback if we're running in non-development
 		// if (!app.Environment.IsDevelopment())
 		// {
-			app.UseDefaultFiles();
-			app.UseStaticFiles();
+		app.UseDefaultFiles();
+		app.UseStaticFiles();
 
-			// required for angular spa fall back
-			app.MapFallbackToFile("/index.html");
+		// required for angular spa fall back
+		// annoying bug: routes such as /events won't correctly show the events page if it's a direct navigation
+		// by url
+		app.MapFallbackToFile("/index.html");
 		// }
-		
+
 		app.Run();
 	}
 }

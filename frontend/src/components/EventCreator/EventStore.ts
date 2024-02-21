@@ -3,6 +3,7 @@ import { type BasicEvent } from './models/BasicEvent';
 import type { NewBasicEventRequest } from './models/NewBasicEventRequest';
 import type { UpdateBasicEventRequest } from './models/UpdateBasicEventRequest';
 import type { EventRequestFormModel } from './models/EventRequestFormModel';
+import config from '../../config';
 
 export const EventStore: IEventStore = CreateEventStore();
 
@@ -19,6 +20,7 @@ function CreateEventStore(): IEventStore {
 		CreateEvent: CreateEvent,
 		UpdateEvent: UpdateEvent
 	};
+
 
 	function AddNewEvent(newEvent: BasicEvent) {
 		// Ensure that we have proper data types for this event as it
@@ -38,7 +40,7 @@ function CreateEventStore(): IEventStore {
 	}
 
 	async function GetEvents(): Promise<BasicEvent[]> {
-		return await fetch('https://localhost:7150/api/v1/Events/Get')
+		return await fetch(`${config.backendDomain}/api/v1/Events/Get`)
 			.then(async (x: Response) => (await x.json() as BasicEvent[])
 				.map((x: BasicEvent) => {
 						// parse each "BasicEvent" we received into a proper BasicEvent
@@ -73,7 +75,7 @@ function CreateEventStore(): IEventStore {
 		} as NewBasicEventRequest;
 
 		const createResult = await PostRequestAsync<NewBasicEventRequest, BasicEvent>(
-			'https://localhost:7150/api/v1/Events/Create',
+			`${config.backendDomain}/api/v1/Events/Create`,
 			newEvent
 		);
 
@@ -126,7 +128,7 @@ function CreateEventStore(): IEventStore {
 		} as UpdateBasicEventRequest;
 
 		const updatedResult = await PostRequestAsync<UpdateBasicEventRequest, BasicEvent>(
-			'https://localhost:7150/api/v1/Events/Update',
+			`${config.backendDomain}/api/v1/Events/Update`,
 			updatedEvent
 		);
 

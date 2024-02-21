@@ -16,7 +16,7 @@
   }
 </style>
 <div class="event-list">
-	{#each $EventStore as event1}
-		<EventDisplay Event={event1} />
+	{#each $EventStore as event}
+		<EventDisplay Event={event} />
 	{/each}
 </div>
