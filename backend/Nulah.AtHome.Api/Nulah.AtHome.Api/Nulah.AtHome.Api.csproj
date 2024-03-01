@@ -29,7 +29,32 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="wwwroot\"/>
+      <AdditionalFiles Include="Components\App.razor" />
+      <AdditionalFiles Include="Components\Layout\MainLayout.razor" />
+      <AdditionalFiles Include="Components\Layout\NavMenu.razor" />
+      <AdditionalFiles Include="Components\Pages\Counter.razor" />
+      <AdditionalFiles Include="Components\Pages\Error.razor" />
+      <AdditionalFiles Include="Components\Pages\Home.razor" />
+      <AdditionalFiles Include="Components\Pages\Weather.razor" />
+      <AdditionalFiles Include="Components\Routes.razor" />
+      <AdditionalFiles Include="Components\_Imports.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\_app\env.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\assets\3.mxgaupB1.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\assets\_page.mxgaupB1.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\chunks\entry.RnbO_k3T.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\chunks\index.24ww3iHS.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\chunks\index.QHbogpj1.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\chunks\scheduler.zMJaRgub.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\entry\app.uKmH_lq8.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\entry\start.PoQOg5yb.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\nodes\0.1FEGl0gx.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\nodes\1.AN_9VCn_.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\nodes\2.TnEFaz7d.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\immutable\nodes\3.hLg_cZt7.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\_app\version.json" />
     </ItemGroup>
 
 </Project>

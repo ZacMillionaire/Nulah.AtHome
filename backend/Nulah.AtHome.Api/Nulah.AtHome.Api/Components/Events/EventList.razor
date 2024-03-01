@@ -1,0 +1,59 @@
+﻿@*
+without this the view will be rendered twice, once on the server that gets sent to the user and then again once it completes
+or something.
+
+With this it'll stop double calls to load events in this instance
+
+this link has a more complicated solution as well
+https://jonhilton.net/persist-state-between-renders-net8/
+
+need to look up blazor prerender on the server avoid double load
+*@
+@rendermode @(new InteractiveServerRenderMode(false))
+<h3> EventList 1</h3>
+
+<p>afafsdf</p>
+
+@if (isLoading)
+{
+    <h2>Loading...</h2>
+}
+else
+{
+    <pre>Stamp : @myProvider.Events.Count </pre>
+    @foreach (var eventDto in myProvider.Events)
+    {
+        <EventItem EventDto="@eventDto"/>
+    }
+}
+
+@code {
+
+    // need to look up how [CascadingParameter] works and if it'll be useful
+    [Inject]
+    private EventService myProvider { get; set; } = default!;
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArgumentNullException.ThrowIfNull(this.myProvider);
+        this.myProvider.EventsUpdated += this.OnChanged;
+
+        await myProvider.LoadEvents();
+        isLoading = false;
+        // triggers the component to rerender
+        StateHasChanged();
+    }
+
+    private void OnChanged(object? sender, EventArgs e)
+    {
+        this.InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        this.myProvider.EventsUpdated -= this.OnChanged;
+    }
+
+}

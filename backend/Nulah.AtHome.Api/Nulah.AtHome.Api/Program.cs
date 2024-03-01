@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Nulah.AtHome.Api.Components;
 using Nulah.AtHome.Data;
+using Nulah.AtHome.Data.DTO.Events;
 
 namespace Nulah.AtHome.Api;
 
@@ -9,6 +11,9 @@ public class Program
 	public static void Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
+
+		builder.Services.AddRazorComponents()
+			.AddInteractiveServerComponents();
 
 		// Add services to the container.
 		builder.Services.AddAuthorization();
@@ -36,6 +41,8 @@ public class Program
 		);
 
 		builder.Services.AddTransient<EventManager>();
+
+		builder.Services.AddScoped<EventService>();
 
 		// If we're in development mode, the frontend will be running externally, so we'll need CORS
 		if (builder.Environment.IsDevelopment())
@@ -81,15 +88,23 @@ public class Program
 		app.UseHttpsRedirection();
 #endif
 
+
 		app.UseRouting();
 
 		app.UseAuthentication();
 		app.UseAuthorization();
+		app.UseStaticFiles();
+		app.UseAntiforgery();
+
+		app.MapRazorComponents<App>()
+			.AddInteractiveServerRenderMode();
 
 		app.MapDefaultControllerRoute()
 			.RequireAuthorization()
 			.WithOpenApi();
 
+
+		/*
 		// Only use files from wwwroot with fallback if we're running in non-development
 		// if (!app.Environment.IsDevelopment())
 		// {
@@ -101,7 +116,44 @@ public class Program
 		// by url
 		app.MapFallbackToFile("/index.html");
 		// }
+		*/
 
 		app.Run();
+	}
+}
+
+internal class EventService
+{
+	public List<BasicEventDto> Events { get; set; } = new();
+
+	public event EventHandler? EventsUpdated;
+
+	private readonly EventManager _eventManager;
+
+	public EventService(EventManager eventManager)
+	{
+		_eventManager = eventManager;
+	}
+
+	public async Task LoadEvents()
+	{
+		Events = await _eventManager.GetEvents();
+		EventsUpdated?.Invoke(this, EventArgs.Empty);
+	}
+
+	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest update)
+	{
+		var updatedEvent = await _eventManager.UpdateEvent(update);
+		return updatedEvent;
+	}
+
+	public void NotifyListChange(string newValue)
+	{
+		//Defaults.Add(newValue);
+		Events.Add(new BasicEventDto()
+		{
+			Description = newValue
+		});
+		EventsUpdated?.Invoke(this, EventArgs.Empty);
 	}
 }

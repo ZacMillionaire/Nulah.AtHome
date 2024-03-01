@@ -1,4 +1,6 @@
-﻿namespace Nulah.AtHome.Data.DTO.Events;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Nulah.AtHome.Data.DTO.Events;
 
 public class BasicEventDto : DtoBase
 {

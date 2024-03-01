@@ -90,7 +90,12 @@ public class EventManager
 
 		var existingEvent = await _context.BasicEvents
 			.Include(basicEvent => basicEvent.Tags)
-			.FirstOrDefaultAsync(x => x.Id == updateBasicEventRequest.Id);
+			.FirstOrDefaultAsync(x =>
+				x.Id == updateBasicEventRequest.Id
+				// this is ugly but I want to make sure that we're definitely getting the version.
+				// If we just load by raw Id then we'll completely sidestep version validation
+				&& x.Version == updateBasicEventRequest.Version
+			);
 
 		if (existingEvent == null)
 		{
@@ -100,7 +105,6 @@ public class EventManager
 		existingEvent.Description = updateBasicEventRequest.Description!;
 		existingEvent.Start = updateBasicEventRequest.Start!.Value;
 		existingEvent.End = updateBasicEventRequest.End;
-		existingEvent.Id = existingEvent.Id;
 
 		// Determine new/existing tags as usual
 		var generateTags = FindTags(SanitiseTags(updateBasicEventRequest.Tags));
@@ -121,7 +125,8 @@ public class EventManager
 			.DistinctBy(x => x.Id)
 			.ToList();
 
-		// If the event is updated elsewhere this will throw a concurrency error
+		// If the event is updated elsewhere this will throw a concurrency error, but if we've made it this far we can
+		// be certain we've loaded the most recent version into tracking
 		await _context.SaveChangesAsync();
 
 		return new BasicEventDto()

@@ -1,0 +1,37 @@
+﻿@page "/"
+@*
+ this is here to make sure the button triggers an update with the ui for any components (eventlist)
+ without it clicking the button would work but the list wouldn't update (i think?)
+ 
+ this also puts the app (for this page) into web socket mode
+ *@
+@rendermode InteractiveServer
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<div class="m-2 p-2">
+    <button class="btn btn-primary" @onclick="Clicked">Update Time Stamp</button>
+</div>
+
+<EventList/>
+
+@code {
+
+    [Inject]
+    private EventService myProvider { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(this.myProvider);
+    }
+
+    private void Clicked()
+    {
+        myProvider.NotifyListChange(DateTime.Now.ToLongTimeString());
+    }
+
+}

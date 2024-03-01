@@ -1,0 +1,88 @@
+﻿@using Nulah.AtHome.Data.DTO.Events
+@using System.ComponentModel.DataAnnotations
+@using Nulah.AtHome.Api.Models
+<fieldset disabled="@FormDisabled">
+    <EditForm Model="FormData" OnSubmit="OnSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+        <span>
+            @FormData.GenericErrors
+        </span>
+        <div>
+            <input @bind="FormData.Description"/>
+            <ValidationMessage For="() => FormData.Description"/>
+        </div>
+        <div>
+            <input type="datetime-local" @bind="FormData.Start"/>
+            <ValidationMessage For="() => FormData.Start"/>
+        </div>
+        <div>
+            <input type="datetime-local" @bind="FormData.End"/>
+            <ValidationMessage For="() => FormData.End"/>
+        </div>
+        <div>
+            <input @bind="FormData.Tags">
+        </div>
+        <button type="submit">submit</button>
+    </EditForm>
+</fieldset>
+
+@code {
+
+    [Parameter]
+    public BasicEventDto EventDto { get; set; }
+
+    [Parameter]
+    public Func<EventFormData, Task> FormSubmit { get; set; }
+
+    private EventFormData FormData { get; set; } = new();
+    private bool FormDisabled { get; set; }
+
+    protected override Task OnParametersSetAsync()
+    {
+        FormData = new EventFormData()
+        {
+            Id = EventDto.Id,
+            Version = EventDto.Version,
+            Description = EventDto.Description,
+            Start = EventDto.Start,
+            End = EventDto.End,
+            Tags = EventDto.Tags.Count == 0
+                ? string.Empty
+                : string.Join(",",
+                    EventDto.Tags
+                        .Select(x => x.Name)
+                )
+        };
+
+        return base.OnParametersSetAsync();
+    }
+
+    private async void OnSubmit(EditContext obj)
+    {
+        FormDisabled = true;
+        FormData.GenericErrors = null;
+        await InvokeAsync(StateHasChanged);
+
+        if (obj.Validate())
+        {
+            try
+            {
+                await Task.Delay(1000);
+                // something loading state started
+                await FormSubmit(FormData);
+                // something loading state ended
+            }
+            catch
+            {
+                FormData.GenericErrors = "Something went wrong :(((";
+            }
+            finally
+            {
+                FormDisabled = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+}

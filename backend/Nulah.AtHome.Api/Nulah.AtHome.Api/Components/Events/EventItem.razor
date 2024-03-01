@@ -1,0 +1,76 @@
+﻿@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Models
+@rendermode InteractiveServer
+
+<button class="btn btn-primary" @onclick="ToggleEditMode">TEST toggle edit mode</button>
+
+@if (!_showEditForm)
+{
+    <div>
+        <div>@EventDto.Description</div>
+        <div>Start: @EventDto.Start</div>
+        <div>Start: @EventDto.End</div>
+        <div>
+            @string.Join(", ", EventDto.Tags.Select(x => x.Name))
+        </div>
+    </div>
+}
+else
+{
+    <EventForm EventDto="@EventDto" FormSubmit="SubmitUpdate"/>
+}
+
+@code {
+
+    private bool _showEditForm { get; set; }
+
+    [Parameter]
+    public BasicEventDto EventDto { get; set; }
+
+    [Inject]
+    private EventService myProvider { get; set; } = default!;
+
+    private void ToggleEditMode()
+    {
+        // Toggling this will trigger the EventForm to receive parameters, so if EventDto is updated
+        // 
+        _showEditForm = !_showEditForm;
+        StateHasChanged();
+    }
+
+    private async Task SubmitUpdate(EventFormData eventFormData)
+    {
+        var updateBasicEventRequest = new UpdateBasicEventRequest()
+        {
+            Id = EventDto.Id,
+            Version = EventDto.Version,
+            Description = eventFormData.Description,
+            Start = eventFormData.Start,
+            End = eventFormData.End,
+            Tags = string.IsNullOrWhiteSpace(eventFormData.Tags)
+                ? []
+                : eventFormData.Tags.Split(",").ToList()
+        };
+
+        try
+        {
+            var updatedEvent = await myProvider.UpdateEvent(updateBasicEventRequest);
+
+            // This ensures that when the visibility is toggled the eventform receives the updated state
+            EventDto = updatedEvent;
+        }
+        catch
+        {
+            // editing this twice will throw an error so we'll need to handle this and display the error or a nice error or something
+            // once I get that working I'll just make sure the entity is updated correctly
+
+            throw;
+        }
+
+
+        // might just leave the form visible after update
+        //_showEditForm = false;
+        //await this.InvokeAsync(StateHasChanged);
+    }
+
+}
