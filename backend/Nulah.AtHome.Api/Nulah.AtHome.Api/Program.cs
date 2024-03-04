@@ -100,8 +100,6 @@ public class Program
 
 		app.UseRouting();
 
-		// Something here is for blazor stuff? Copy and pasted it from the base blazor project but I'll probably
-		// want to review this one day...
 		app.UseAuthentication();
 		app.UseAuthorization();
 		app.UseStaticFiles();

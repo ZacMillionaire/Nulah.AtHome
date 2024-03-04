@@ -1,39 +1,28 @@
 ﻿@using Nulah.AtHome.Data.DTO.Events
-@using Nulah.AtHome.Api.Models
-@using System.Diagnostics
 @using Nulah.AtHome.Api.Services
-@using OpenTelemetry.Trace
+@using Nulah.AtHome.Api.Models
 @rendermode InteractiveServer
 
-
-<div class="event-contents">
-    <div class="event-item">
-        @if (!_showEditForm)
-        {
-            <div class="description">
-                <h2>@EventDto.Description</h2>
-            </div>
-            <div class="start-label">Start:</div>
-            <div class="start-date">@EventDto.Start</div>
-            <div class="end-label">Start:</div>
-            <div class="end-date">@EventDto.End</div>
-            <div class="tags">
-                @string.Join(", ", EventDto.Tags.Select(x => x.Name))
-            </div>
-        }
-        else
-        {
-            <EventForm EventDto="@EventDto" FormSubmit="SubmitUpdate"/>
-        }
-    </div>
-    <div class="edit-buttons">
-        <button class="btn btn-primary" @onclick="ToggleEditMode">edit</button>
-    </div>
+<div class="event-table-row">
+    @if (!_showEditForm)
+    {
+        <div class="event-table-cell">@EventDto.Description</div>
+        <div class="event-table-cell">@EventDto.Start.ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell">@EventDto.End?.ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell">@string.Join(", ", EventDto.Tags.Select(x => x.Name))</div>
+        <div class="event-table-cell center"  style="width: 0.1%">
+            <button class="btn btn-primary btn-sm" @onclick="ToggleEditMode">edit</button>
+        </div>
+    }
+    else
+    {
+        <EventTableRowEdit EventDto="@EventDto" FormSubmit="SubmitUpdate" FormCancel="CancelEdit"/>
+    }
 </div>
 
 @code {
 
-    private bool _showEditForm = true;
+    private bool _showEditForm = false;
 
     [Parameter]
     public BasicEventDto EventDto { get; set; } = default!;
@@ -75,6 +64,12 @@
         _showEditForm = false;
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void CancelEdit()
+    {
+        _showEditForm = false;
+        StateHasChanged();
     }
 
 }

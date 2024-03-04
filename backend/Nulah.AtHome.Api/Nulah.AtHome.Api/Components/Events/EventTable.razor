@@ -1,32 +1,29 @@
 ﻿@using Nulah.AtHome.Api.Services
 @using Nulah.AtHome.Data.DTO.Events
-@*
-without this the view will be rendered twice, once on the server that gets sent to the user and then again once it completes
-or something.
-
-With this it'll stop double calls to load events in this instance
-
-this link has a more complicated solution as well
-https://jonhilton.net/persist-state-between-renders-net8/
-
-need to look up blazor prerender on the server avoid double load
-*@
 @rendermode @(new InteractiveServerRenderMode(false))
-<h3>Events</h3>
-@if (_isLoading)
-{
-    // In the future this will simply disable the list to account for existing items already being available
-    // which means dragging the loop below up and making sure it doesn't throw a null reference exception on event service
-    <h2>Loading...</h2>
-}
 
-<div class="event-list">
-    @foreach (var eventDto in Events)
-    {
-        <div class="event-item-container">
-            <EventItem EventDto="@eventDto"/>
+<div class="event-table">
+    <div class="event-table-header-row">
+        <div class="event-table-header">
+            Description
         </div>
-    }
+        <div class="event-table-header">
+            Start
+        </div>
+        <div class="event-table-header">
+            End
+        </div>
+        <div class="event-table-header">
+            Tags
+        </div>
+        <div class="event-table-header"></div>
+    </div>
+    <div class="event-table-body">
+        @foreach (var eventDto in Events)
+        {
+            <EventTableRow EventDto="eventDto"/>
+        }
+    </div>
 </div>
 
 @code {
@@ -63,12 +60,6 @@ need to look up blazor prerender on the server avoid double load
         Events = e;
 
         InvokeAsync(StateHasChanged);
-    }
-
-    // Don't really know what part of the blazor lifecycle this would be called
-    public void Dispose()
-    {
-        EventService.EventsUpdated -= this.OnChanged;
     }
 
 }

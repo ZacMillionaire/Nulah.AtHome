@@ -1,31 +1,37 @@
 ﻿@using Nulah.AtHome.Data.DTO.Events
-@using System.ComponentModel.DataAnnotations
 @using Nulah.AtHome.Api.Models
-<fieldset disabled="@FormDisabled">
-    <EditForm Model="FormData" OnSubmit="OnSubmit">
+
+<EditForm Model="FormData" OnSubmit="OnSubmit" style="display:contents">
+    <fieldset disabled="@FormDisabled" style="display:contents">
         <DataAnnotationsValidator/>
-        <ValidationSummary/>
-        <span>
-            @FormData.GenericErrors
-        </span>
-        <div class="description">
-            <input @bind="FormData.Description"/>
+        @* <ValidationSummary/> *@
+        @* <span> *@
+        @*     @FormData.GenericErrors *@
+        @* </span> *@
+        <div class="event-table-cell">
             <ValidationMessage For="() => FormData.Description"/>
+            <span>@FormData.GenericErrors</span>
+            <input @bind="FormData.Description"/>
         </div>
-        <div class="description">
-            <input type="datetime-local" @bind="FormData.Start"/>
+        <div class="event-table-cell">
             <ValidationMessage For="() => FormData.Start"/>
+            <input type="datetime-local" @bind="FormData.Start"/>
         </div>
-        <div class="description">
-            <input type="datetime-local" @bind="FormData.End"/>
+        <div class="event-table-cell">
             <ValidationMessage For="() => FormData.End"/>
+            <input type="datetime-local" @bind="FormData.End"/>
         </div>
-        <div class="description">
+        <div class="event-table-cell">
             <input @bind="FormData.Tags">
         </div>
-        <button type="submit">submit</button>
-    </EditForm>
-</fieldset>
+        <div class="event-table-cell" style="width: 0.1%">
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <button class="btn btn-secondary btn-sm" @onclick="FormCancel">Cancel</button>
+            </div>
+        </div>
+    </fieldset>
+</EditForm>
 
 @code {
 
@@ -35,12 +41,16 @@
     [Parameter]
     public Func<EventFormData, Task> FormSubmit { get; set; }
 
+    [Parameter]
+    public Action FormCancel { get; set; }
+
     private EventFormData FormData { get; set; } = new();
     private bool FormDisabled { get; set; }
 
     protected override Task OnParametersSetAsync()
     {
         ArgumentNullException.ThrowIfNull(FormSubmit);
+        ArgumentNullException.ThrowIfNull(FormCancel);
 
         FormData = new EventFormData()
         {
@@ -66,23 +76,23 @@
         FormData.GenericErrors = null;
         await InvokeAsync(StateHasChanged);
 
-        if (obj.Validate())
+        try
         {
-            try
+            if (obj.Validate())
             {
                 // something loading state started
                 await FormSubmit(FormData);
                 // something loading state ended
             }
-            catch
-            {
-                FormData.GenericErrors = "Something went wrong :(((";
-            }
-            finally
-            {
-                FormDisabled = false;
-                await InvokeAsync(StateHasChanged);
-            }
+        }
+        catch
+        {
+            FormData.GenericErrors = "Something went wrong :(((";
+        }
+        finally
+        {
+            FormDisabled = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
