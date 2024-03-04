@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nulah.AtHome.Data.DTO;
 using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models;
 using Nulah.AtHome.Data.Models.Events;
+using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Data;
 
@@ -48,6 +50,9 @@ public class EventManager
 
 	public async Task<BasicEventDto> CreateEvent(NewBasicEventRequest newBasicEventRequest)
 	{
+		using var updateEvent = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		PopulateActivityTags(updateEvent, newBasicEventRequest);
+
 		ValidateBasicEventRequest(newBasicEventRequest);
 
 		var newEvent = new BasicEvent()
@@ -86,7 +91,30 @@ public class EventManager
 
 	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest updateBasicEventRequest)
 	{
+		using var updateEvent = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		updateEvent?.SetTag("event.id", updateBasicEventRequest.Id);
+		updateEvent?.SetTag("event.version", updateBasicEventRequest.Version);
+		PopulateActivityTags(updateEvent, updateBasicEventRequest);
+
+		try
+		{
+			return await UpdateEventAsync(updateBasicEventRequest);
+		}
+		catch (Exception ex)
+		{
+			updateEvent?.SetStatus(ActivityStatusCode.Error, ex.Message);
+			updateEvent?.RecordException(ex);
+			throw;
+		}
+	}
+
+	private async Task<BasicEventDto> UpdateEventAsync(UpdateBasicEventRequest updateBasicEventRequest)
+	{
+		using var updateActivity = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+
 		ValidateBasicEventRequest(updateBasicEventRequest);
+
+		updateActivity?.AddEvent(new ActivityEvent("Find event by Id and Version", DateTimeOffset.Now));
 
 		var existingEvent = await _context.BasicEvents
 			.Include(basicEvent => basicEvent.Tags)
@@ -99,7 +127,7 @@ public class EventManager
 
 		if (existingEvent == null)
 		{
-			throw new Exception($"No event found with the id of {updateBasicEventRequest.Id}");
+			throw new Exception($"No event found with the id of {updateBasicEventRequest.Id} and version {updateBasicEventRequest.Version}");
 		}
 
 		existingEvent.Description = updateBasicEventRequest.Description!;
@@ -160,8 +188,12 @@ public class EventManager
 	/// <returns></returns>
 	private List<Tag> FindTags(List<string> tagList)
 	{
+		using var updateActivity = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		updateActivity?.SetTag("tags", string.Join(",", tagList));
+
 		if (tagList.Count == 0)
 		{
+			updateActivity?.AddEvent(new ActivityEvent("No tags given", DateTimeOffset.Now));
 			return [];
 		}
 
@@ -211,5 +243,17 @@ public class EventManager
 		{
 			throw new Exception("Start date cannot be exactly on or after end date");
 		}
+	}
+
+	private void PopulateActivityTags(Activity? activity, BasicEventRequest eventRequest)
+	{
+		activity?.SetTag("event.start", eventRequest.Start);
+		activity?.SetTag("event.end", eventRequest.End);
+		activity?.SetTag("event.description", eventRequest.Description);
+		activity?.SetTag("event.tags",
+			eventRequest.Tags is { Count: > 0 }
+				? string.Join(",", eventRequest.Tags)
+				: "[no tags]"
+		);
 	}
 }

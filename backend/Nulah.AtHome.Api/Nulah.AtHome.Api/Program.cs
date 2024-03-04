@@ -1,13 +1,19 @@
-using System.Text.Json;
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Nulah.AtHome.Api.Components;
+using Nulah.AtHome.Api.Services;
 using Nulah.AtHome.Data;
-using Nulah.AtHome.Data.DTO.Events;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Api;
 
 public class Program
 {
+	internal const string ServiceName = "Nulah.AtHome.Api";
+
 	public static void Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
@@ -40,25 +46,30 @@ public class Program
 			}
 		);
 
-		builder.Services.AddTransient<EventManager>();
-
 		builder.Services.AddScoped<EventService>();
 
-		// If we're in development mode, the frontend will be running externally, so we'll need CORS
-		if (builder.Environment.IsDevelopment())
+		builder.Services.AddScoped<EventManager>();
+
+
+		builder.Logging.AddOpenTelemetry(opts =>
 		{
-			builder.Services.AddCors(options =>
+			opts.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(ServiceName))
+				.AddOtlpExporter()
+				.AddConsoleExporter();
+		});
+
+		builder.Services.AddOpenTelemetry()
+			.ConfigureResource(resource => resource.AddService(ServiceName))
+			.WithTracing(tracing =>
 			{
-				options.AddPolicy(name: builder.Configuration.GetSection("CORS:PolicyName").Value,
-					policy =>
-					{
-						policy.WithOrigins(builder.Configuration.GetSection("Api:FrontEndDomain").Value);
-						policy.AllowCredentials();
-						policy.AllowAnyHeader();
-						policy.WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Patch);
-					});
-			});
-		}
+				tracing.AddSource(ServiceName)
+					.ConfigureResource(r => r.AddService(serviceName: ServiceName, serviceVersion: "0.0.1"))
+					.AddAspNetCoreInstrumentation()
+					.AddNulahDataInstrumentation()
+					.AddConsoleExporter()
+					.AddOtlpExporter();
+			})
+			.WithMetrics(metrics => metrics.AddAspNetCoreInstrumentation().AddConsoleExporter().AddOtlpExporter());
 
 		var app = builder.Build();
 
@@ -79,8 +90,6 @@ public class Program
 
 			app.UseSwagger();
 			app.UseSwaggerUI();
-			// If we're in development mode, the frontend will be running externally, so we'll need CORS
-			app.UseCors(builder.Configuration.GetSection("CORS:PolicyName").Value);
 		}
 #endif
 
@@ -91,6 +100,8 @@ public class Program
 
 		app.UseRouting();
 
+		// Something here is for blazor stuff? Copy and pasted it from the base blazor project but I'll probably
+		// want to review this one day...
 		app.UseAuthentication();
 		app.UseAuthorization();
 		app.UseStaticFiles();
@@ -103,57 +114,11 @@ public class Program
 			.RequireAuthorization()
 			.WithOpenApi();
 
-
-		/*
-		// Only use files from wwwroot with fallback if we're running in non-development
-		// if (!app.Environment.IsDevelopment())
-		// {
-		app.UseDefaultFiles();
-		app.UseStaticFiles();
-
-		// required for angular spa fall back
-		// annoying bug: routes such as /events won't correctly show the events page if it's a direct navigation
-		// by url
-		app.MapFallbackToFile("/index.html");
-		// }
-		*/
-
 		app.Run();
 	}
 }
 
-internal class EventService
+public static class Telemetry
 {
-	public List<BasicEventDto> Events { get; set; } = new();
-
-	public event EventHandler? EventsUpdated;
-
-	private readonly EventManager _eventManager;
-
-	public EventService(EventManager eventManager)
-	{
-		_eventManager = eventManager;
-	}
-
-	public async Task LoadEvents()
-	{
-		Events = await _eventManager.GetEvents();
-		EventsUpdated?.Invoke(this, EventArgs.Empty);
-	}
-
-	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest update)
-	{
-		var updatedEvent = await _eventManager.UpdateEvent(update);
-		return updatedEvent;
-	}
-
-	public void NotifyListChange(string newValue)
-	{
-		//Defaults.Add(newValue);
-		Events.Add(new BasicEventDto()
-		{
-			Description = newValue
-		});
-		EventsUpdated?.Invoke(this, EventArgs.Empty);
-	}
+	public static ActivitySource MyActivitySource => new(Program.ServiceName, "0.0.1");
 }

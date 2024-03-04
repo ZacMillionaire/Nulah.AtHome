@@ -1,5 +1,8 @@
 ﻿@using Nulah.AtHome.Data.DTO.Events
 @using Nulah.AtHome.Api.Models
+@using System.Diagnostics
+@using Nulah.AtHome.Api.Services
+@using OpenTelemetry.Trace
 @rendermode InteractiveServer
 
 <button class="btn btn-primary" @onclick="ToggleEditMode">TEST toggle edit mode</button>
@@ -22,18 +25,22 @@ else
 
 @code {
 
-    private bool _showEditForm { get; set; }
+    private bool _showEditForm = false;
 
     [Parameter]
-    public BasicEventDto EventDto { get; set; }
+    public BasicEventDto EventDto { get; set; } = default!;
 
     [Inject]
-    private EventService myProvider { get; set; } = default!;
+    private EventService EventService { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(EventService);
+    }
 
     private void ToggleEditMode()
     {
         // Toggling this will trigger the EventForm to receive parameters, so if EventDto is updated
-        // 
         _showEditForm = !_showEditForm;
         StateHasChanged();
     }
@@ -52,25 +59,14 @@ else
                 : eventFormData.Tags.Split(",").ToList()
         };
 
-        try
-        {
-            var updatedEvent = await myProvider.UpdateEvent(updateBasicEventRequest);
+        var updatedEvent = await EventService.UpdateEvent(updateBasicEventRequest);
 
-            // This ensures that when the visibility is toggled the eventform receives the updated state
-            EventDto = updatedEvent;
-        }
-        catch
-        {
-            // editing this twice will throw an error so we'll need to handle this and display the error or a nice error or something
-            // once I get that working I'll just make sure the entity is updated correctly
+        // This ensures that when the visibility is toggled the eventform receives the updated state
+        EventDto = updatedEvent;
 
-            throw;
-        }
+        _showEditForm = false;
 
-
-        // might just leave the form visible after update
-        //_showEditForm = false;
-        //await this.InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
     }
 
 }

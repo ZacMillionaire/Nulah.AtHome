@@ -30,7 +30,7 @@
 @code {
 
     [Parameter]
-    public BasicEventDto EventDto { get; set; }
+    public BasicEventDto EventDto { get; set; } = new();
 
     [Parameter]
     public Func<EventFormData, Task> FormSubmit { get; set; }
@@ -40,6 +40,8 @@
 
     protected override Task OnParametersSetAsync()
     {
+        ArgumentNullException.ThrowIfNull(FormSubmit);
+
         FormData = new EventFormData()
         {
             Id = EventDto.Id,
@@ -68,7 +70,6 @@
         {
             try
             {
-                await Task.Delay(1000);
                 // something loading state started
                 await FormSubmit(FormData);
                 // something loading state ended

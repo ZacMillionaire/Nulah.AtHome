@@ -1,4 +1,6 @@
-﻿@*
+﻿@using Nulah.AtHome.Api.Services
+@using Nulah.AtHome.Data.DTO.Events
+@*
 without this the view will be rendered twice, once on the server that gets sent to the user and then again once it completes
 or something.
 
@@ -10,50 +12,59 @@ https://jonhilton.net/persist-state-between-renders-net8/
 need to look up blazor prerender on the server avoid double load
 *@
 @rendermode @(new InteractiveServerRenderMode(false))
-<h3> EventList 1</h3>
-
-<p>afafsdf</p>
-
-@if (isLoading)
+<h3>Events</h3>
+@if (_isLoading)
 {
+    // In the future this will simply disable the list to account for existing items already being available
+    // which means dragging the loop below up and making sure it doesn't throw a null reference exception on event service
     <h2>Loading...</h2>
 }
-else
+
+@foreach (var eventDto in Events)
 {
-    <pre>Stamp : @myProvider.Events.Count </pre>
-    @foreach (var eventDto in myProvider.Events)
-    {
-        <EventItem EventDto="@eventDto"/>
-    }
+    <EventItem EventDto="@eventDto"/>
 }
 
 @code {
 
-    // need to look up how [CascadingParameter] works and if it'll be useful
     [Inject]
-    private EventService myProvider { get; set; } = default!;
+    private EventService EventService { get; set; }
 
-    private bool isLoading = true;
+    private List<BasicEventDto> Events { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
+    private bool _isLoading = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        ArgumentNullException.ThrowIfNull(this.myProvider);
-        this.myProvider.EventsUpdated += this.OnChanged;
+        if (!firstRender)
+            return;
 
-        await myProvider.LoadEvents();
-        isLoading = false;
+        ArgumentNullException.ThrowIfNull(EventService);
+        EventService.EventsUpdated += OnChanged;
+
+        await EventService.LoadEvents();
+        // _isLoading = false;
         // triggers the component to rerender
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void OnChanged(object? sender, EventArgs e)
+    private void OnChanged(object? sender, List<BasicEventDto> e)
     {
-        this.InvokeAsync(StateHasChanged);
+        // Update is loading if it was previously changed to true elsewhere, eg, a hard refresh button was clicked
+        if (_isLoading)
+        {
+            _isLoading = false;
+        }
+
+        Events = e;
+
+        InvokeAsync(StateHasChanged);
     }
 
+    // Don't really know what part of the blazor lifecycle this would be called
     public void Dispose()
     {
-        this.myProvider.EventsUpdated -= this.OnChanged;
+        EventService.EventsUpdated -= this.OnChanged;
     }
 
 }
