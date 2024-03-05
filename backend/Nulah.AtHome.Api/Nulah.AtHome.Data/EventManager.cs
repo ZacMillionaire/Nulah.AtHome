@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nulah.AtHome.Data.Converters;
 using Nulah.AtHome.Data.DTO;
 using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models;
@@ -9,22 +11,28 @@ using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Data;
 
+public class EventListCriteria
+{
+	public bool? HasEventDate { get; set; }
+	public DateTimeOffset? BeforeEndDate { get; set; }
+}
+
 public class EventManager
 {
 	private readonly AppDbContext _context;
 	private readonly ILogger _logger;
-	private Guid _instanceId = Guid.NewGuid();
 
 	public EventManager(AppDbContext context, ILogger<EventManager> logger)
 	{
 		_context = context;
 		_logger = logger;
-		_logger.LogDebug("[{instanceId}] EventManager created", _instanceId);
 	}
 
-	public async Task<List<BasicEventDto>> GetEvents()
+	public async Task<List<BasicEventDto>> GetEvents(EventListCriteria? criteria = null)
 	{
-		return await _context.BasicEvents.Select(x => new BasicEventDto()
+		return await _context.BasicEvents
+			.Where(Build(criteria))
+			.Select(x => new BasicEventDto()
 			{
 				Description = x.Description,
 				End = x.End,
@@ -106,6 +114,32 @@ public class EventManager
 			updateEvent?.RecordException(ex);
 			throw;
 		}
+	}
+
+
+	private Expression<Func<BasicEvent, bool>> Build(EventListCriteria? criteria)
+	{
+		if (criteria == null)
+		{
+			return x => true;
+		}
+
+		Expression<Func<BasicEvent, bool>>? baseFunc = null;
+
+		if (criteria.HasEventDate.HasValue)
+		{
+			baseFunc = baseFunc.And(x => x.End != null);
+		}
+
+		// Return an empty expression
+		baseFunc ??= x => true;
+
+		if (baseFunc.CanReduce)
+		{
+			baseFunc.Reduce();
+		}
+
+		return baseFunc;
 	}
 
 	private async Task<BasicEventDto> UpdateEventAsync(UpdateBasicEventRequest updateBasicEventRequest)

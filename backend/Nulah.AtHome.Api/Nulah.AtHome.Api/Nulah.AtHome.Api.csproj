@@ -27,7 +27,7 @@
     <!-- https://stackoverflow.com/questions/42712055/asp-net-core-exclude-or-include-files-on-publish -->
     <ItemGroup>
         <!-- will be created by frontend builds -->
-        <Content Update="wwwroot\**\*" CopyToPublishDirectory="Never"/>
+<!--        <Content Update="wwwroot\**\*" CopyToPublishDirectory="Never"/>-->
         <!-- excludes all appsettings apart from the base appsettings.json -->
         <Content Update="appsettings.*.json" CopyToPublishDirectory="Never"/>
     </ItemGroup>

@@ -30,7 +30,7 @@
 @code {
 
     [Parameter]
-    public BasicEventDto EventDto { get; set; } = new();
+    public BasicEventDto? EventDto { get; set; }
 
     [Parameter]
     public Func<EventFormData, Task> FormSubmit { get; set; }
@@ -42,32 +42,35 @@
     {
         ArgumentNullException.ThrowIfNull(FormSubmit);
 
-        FormData = new EventFormData()
+        if (EventDto != null)
         {
-            Id = EventDto.Id,
-            Version = EventDto.Version,
-            Description = EventDto.Description,
-            Start = EventDto.Start,
-            End = EventDto.End,
-            Tags = EventDto.Tags.Count == 0
-                ? string.Empty
-                : string.Join(",",
-                    EventDto.Tags
-                        .Select(x => x.Name)
-                )
-        };
+            FormData = new EventFormData()
+            {
+                Id = EventDto.Id,
+                Version = EventDto.Version,
+                Description = EventDto.Description,
+                Start = EventDto.Start,
+                End = EventDto.End,
+                Tags = EventDto.Tags.Count == 0
+                    ? string.Empty
+                    : string.Join(",",
+                        EventDto.Tags
+                            .Select(x => x.Name)
+                    )
+            };
+        }
 
         return base.OnParametersSetAsync();
     }
 
     private async void OnSubmit(EditContext obj)
     {
-        FormDisabled = true;
-        FormData.GenericErrors = null;
-        await InvokeAsync(StateHasChanged);
-
         if (obj.Validate())
         {
+            FormDisabled = true;
+            FormData.GenericErrors = null;
+            await InvokeAsync(StateHasChanged);
+
             try
             {
                 // something loading state started

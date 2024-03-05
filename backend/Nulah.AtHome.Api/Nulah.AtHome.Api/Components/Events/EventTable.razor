@@ -1,6 +1,9 @@
 ﻿@using Nulah.AtHome.Api.Services
 @using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Models
 @rendermode @(new InteractiveServerRenderMode(false))
+
+<EventForm FormSubmit="CreateEvent"/>
 
 <div class="event-table">
     <div class="event-table-header-row">
@@ -18,12 +21,21 @@
         </div>
         <div class="event-table-header"></div>
     </div>
-    <div class="event-table-body">
-        @foreach (var eventDto in Events)
-        {
-            <EventTableRow EventDto="eventDto"/>
-        }
-    </div>
+    @if (_isLoading)
+    {
+        // In the future this will simply disable the list to account for existing items already being available
+        // which means dragging the loop below up and making sure it doesn't throw a null reference exception on event service
+        <h2>Loading...</h2>
+    }
+    else
+    {
+        <div class="event-table-body">
+            @foreach (var eventDto in Events)
+            {
+                <EventTableRow EventDto="eventDto"/>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -60,6 +72,23 @@
         Events = e;
 
         InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CreateEvent(EventFormData eventFormData)
+    {
+        var createEventRequest = new NewBasicEventRequest()
+        {
+            Description = eventFormData.Description,
+            Start = eventFormData.Start,
+            End = eventFormData.End,
+            Tags = string.IsNullOrWhiteSpace(eventFormData.Tags)
+                ? []
+                : eventFormData.Tags.Split(",").ToList()
+        };
+
+        var createdEvent = await EventService.CreateEvent(createEventRequest);
+
+        await InvokeAsync(StateHasChanged);
     }
 
 }

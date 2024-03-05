@@ -29,6 +29,39 @@ internal class EventService
 		EventsUpdated?.Invoke(this, Events);
 	}
 
+	public async Task<BasicEventDto> CreateEvent(NewBasicEventRequest newEvent)
+	{
+		using var createActivity = Telemetry.MyActivitySource.StartActivity(ActivityKind.Internal);
+
+		try
+		{
+			var createdEvent = await EventManager.CreateEvent(newEvent);
+
+			createActivity?.AddEvent(new ActivityEvent("New event created",
+					DateTimeOffset.Now,
+					new(
+						new Dictionary<string, object?>
+						{
+							{ "event.id", createdEvent.Id }
+						}
+					)
+				)
+			);
+
+			await LoadEvents();
+
+			return createdEvent;
+		}
+		catch (Exception ex)
+		{
+			// trace the exception then throw it back to the component
+			createActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+			createActivity?.RecordException(ex);
+
+			throw;
+		}
+	}
+
 	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest update)
 	{
 		using var updateActivity = Telemetry.MyActivitySource.StartActivity(ActivityKind.Internal);
