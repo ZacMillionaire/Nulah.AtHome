@@ -8,22 +8,30 @@
         <span>
             @FormData.GenericErrors
         </span>
-        <div class="description">
-            <input @bind="FormData.Description"/>
+        <div class="mb-3">
+            <label for="description">Description*</label>
+            <input id="description" class="form-control" @bind="FormData.Description"/>
             <ValidationMessage For="() => FormData.Description"/>
         </div>
-        <div class="description">
-            <input type="datetime-local" @bind="FormData.Start"/>
-            <ValidationMessage For="() => FormData.Start"/>
+        <div class="row mb-3">
+            <div class="col">
+                <label for="starttime">Start Time*</label>
+                <input id="starttime" class="form-control" type="datetime-local" @bind="FormData.Start"/>
+                <ValidationMessage For="() => FormData.Start"/>
+            </div>
+            <div class="col">
+                <label for="endtime">End Time</label>
+                <input id="endtime" class="form-control" type="datetime-local" @bind="FormData.End"/>
+                <ValidationMessage For="() => FormData.End"/>
+            </div>
         </div>
-        <div class="description">
-            <input type="datetime-local" @bind="FormData.End"/>
-            <ValidationMessage For="() => FormData.End"/>
+        <div class="row mb-3">
+            <div class="col">
+                <label for="tags">Tags</label>
+                <input id="tags" class="form-control" @bind="FormData.Tags">
+            </div>
         </div>
-        <div class="description">
-            <input @bind="FormData.Tags">
-        </div>
-        <button type="submit">submit</button>
+        <button type="submit" class="btn btn-primary">submit</button>
     </EditForm>
 </fieldset>
 

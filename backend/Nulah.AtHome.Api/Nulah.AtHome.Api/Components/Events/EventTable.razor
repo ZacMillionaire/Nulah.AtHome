@@ -7,14 +7,26 @@
 @using System.Reflection
 @rendermode @(new InteractiveServerRenderMode(false))
 
-<EventForm FormSubmit="CreateEvent"/>
-
-<EditForm Model="ListCriteria">
-    <div class="form-group">
-        <NullableBooleanSelector TrueText="Has End Date" FalseText="No End Date" NullText="All" @bind-Value="ListCriteria.HasEventDate"/>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <EventForm FormSubmit="CreateEvent"/>
+            </div>
+        </div>
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <EditForm Model="ListCriteria">
+                    <h3>Filter</h3>
+                    <div class="mb-3">
+                        <NullableBooleanSelector TrueText="With End Date" FalseText="Without End Date" NullText="All" @bind-Value="ListCriteria.HasEventDate"/>
+                    </div>
+                    <button @onclick="FilterEvents" class="btn btn-primary">Filter</button>
+                </EditForm>
+            </div>
+        </div>
     </div>
-    <button @onclick="FilterEvents">Filter</button>
-</EditForm>
+</div>
 
 <div class="event-table">
     <div class="event-table-header-row">
@@ -81,6 +93,9 @@
 
     private async void NavigationOnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // TODO: maybe it's better to move the form submission and such to the page level?
+        // then I could probably just turn this component into something reactive and decouple it a bit?
+        
         // This will be true if the user is navigating between routes. As we only want to act when the user navigates
         // within this page eg, from Navigation.NavigateTo([with criteria query params]) or any other navigation event
         // that _wasn't_ from Navigation.NavigateTo, we don't want to attempt to load events when the user is navigating away.
@@ -116,7 +131,7 @@
 
         ArgumentNullException.ThrowIfNull(EventService);
         EventService.EventsUpdated += OnChanged;
-        //Navigation.LocationChanged += NavigationOnLocationChanged;
+        Navigation.LocationChanged += NavigationOnLocationChanged;
 
         // Manually trigger this event on first load, as the user might be seeing this component for the first time
         // by entering the url directly with query params.
@@ -169,5 +184,9 @@
 
         return Task.CompletedTask;
     }
-
+    
+    public void Dispose()
+    {
+        EventService.EventsUpdated -= this.OnChanged;
+    }
 }
