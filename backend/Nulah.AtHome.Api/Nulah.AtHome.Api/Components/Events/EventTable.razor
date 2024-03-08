@@ -81,9 +81,32 @@
 
     private async void NavigationOnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        // This will be true if the user is navigating between routes. As we only want to act when the user navigates
+        // within this page eg, from Navigation.NavigateTo([with criteria query params]) or any other navigation event
+        // that _wasn't_ from Navigation.NavigateTo, we don't want to attempt to load events when the user is navigating away.
+        // https://blazor-university.com/routing/detecting-navigation-events/
+        // BUG: Unfortunately this will still be false if the user navigates back/forward :( This seems to be by design and I'm not sure of a way around it
+        // apart from faking history, or just removing this feature all together and only update the url on filter, but break page navigation.
+        if (e.IsNavigationIntercepted)
+            return;
+
+        await LoadEventsFromCriteria();
+    }
+
+    /// <summary>
+    /// Calls the event service to load events based on current criteria.
+    /// <para>
+    /// The criteria set is always from criteria properties, and always assumes they've been set appropriately
+    /// according to blazor component lifecycles (eg, OnParameters[SetAsync] has fired)
+    /// </para>
+    /// </summary>
+    private async Task LoadEventsFromCriteria()
+    {
+        _isLoading = true;
         ListCriteria.HasEventDate = CriteriaHasEventDate;
         ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
         await EventService.LoadEvents(ListCriteria);
+        _isLoading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -93,9 +116,11 @@
 
         ArgumentNullException.ThrowIfNull(EventService);
         EventService.EventsUpdated += OnChanged;
-        Navigation.LocationChanged += NavigationOnLocationChanged;
+        //Navigation.LocationChanged += NavigationOnLocationChanged;
 
-        await EventService.LoadEvents(ListCriteria);
+        // Manually trigger this event on first load, as the user might be seeing this component for the first time
+        // by entering the url directly with query params.
+        await LoadEventsFromCriteria();
         // _isLoading = false;
         // triggers the component to rerender
         await InvokeAsync(StateHasChanged);
