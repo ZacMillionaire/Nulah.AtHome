@@ -1,0 +1,41 @@
+﻿<div class="btn-group" role="group" aria-label="Basic example">
+    <button type="button" @onclick="() => SetValue(true)" class="btn @(Value.HasValue && Value.Value ? "btn-primary" : "btn-outline-secondary")">@TrueText</button>
+    <button type="button" @onclick="() => SetValue(false)" class="btn @(Value.HasValue && !Value.Value ? "btn-primary" : "btn-outline-secondary")">@FalseText</button>
+    <button type="button" @onclick="() => SetValue(null)" class="btn @(!Value.HasValue ? "btn-primary" : "btn-outline-secondary")">@NullText</button>
+</div>
+
+@code{
+//https://www.meziantou.net/two-way-binding-in-blazor.htm
+    [Parameter]
+    public string TrueText { get; set; } = "Yes";
+
+    [Parameter]
+    public string FalseText { get; set; } = "No";
+
+    [Parameter]
+    public string NullText { get; set; } = "All";
+
+
+    [Parameter]
+    public bool? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<bool?> ValueChanged { get; set; }
+
+    private async Task SetValue(bool? value)
+    {
+        if (Value != value)
+        {
+            Value = value;
+            await ValueChanged.InvokeAsync(value);
+        }
+        else if (value != null && Value == value)
+        {
+            // If a user clicks the same value twice and it's not the all button,
+            // reset to the all button
+            Value = null;
+            await ValueChanged.InvokeAsync(null);
+        }
+    }
+
+}

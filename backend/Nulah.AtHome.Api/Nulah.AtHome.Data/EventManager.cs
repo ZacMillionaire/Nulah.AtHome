@@ -128,7 +128,14 @@ public class EventManager
 
 		if (criteria.HasEventDate.HasValue)
 		{
-			baseFunc = baseFunc.And(x => x.End != null);
+			if (criteria.HasEventDate.Value)
+			{
+				baseFunc = baseFunc.And(x => x.End != null);
+			}
+			else
+			{
+				baseFunc = baseFunc.And(x => x.End == null);
+			}
 		}
 
 		// Return an empty expression

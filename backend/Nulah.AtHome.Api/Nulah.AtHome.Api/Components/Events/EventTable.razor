@@ -1,9 +1,20 @@
 ﻿@using Nulah.AtHome.Api.Services
 @using Nulah.AtHome.Data.DTO.Events
 @using Nulah.AtHome.Api.Models
+@using Nulah.AtHome.Data
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@using System.Reflection
 @rendermode @(new InteractiveServerRenderMode(false))
 
 <EventForm FormSubmit="CreateEvent"/>
+
+<EditForm Model="ListCriteria">
+    <div class="form-group">
+        <NullableBooleanSelector TrueText="Has End Date" FalseText="No End Date" NullText="All" @bind-Value="ListCriteria.HasEventDate"/>
+    </div>
+    <button @onclick="FilterEvents">Filter</button>
+</EditForm>
 
 <div class="event-table">
     <div class="event-table-header-row">
@@ -43,9 +54,37 @@
     [Inject]
     private EventService EventService { get; set; }
 
+    [Inject]
+    private NavigationManager Navigation { get; set; }
+
     private List<BasicEventDto> Events { get; set; } = new();
 
     private bool _isLoading = true;
+
+    private EventListCriteria ListCriteria { get; set; } = new();
+
+    // A bunch of stuff below to build up list criteria from the query string that I wish I could do in a smarter way
+    // Probably could with some string split on ? then = into a dictionary that I use property reflection and set it on the
+    // list criteria but
+
+    #region Query Param Shit
+
+    // valid type conversions https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-8.0#query-strings
+
+    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.HasEventDate))]
+    private bool? CriteriaHasEventDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.BeforeEndDate))]
+    private DateTime? CriteriaBeforeEndDate { get; set; }
+
+    #endregion
+
+    private async void NavigationOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        ListCriteria.HasEventDate = CriteriaHasEventDate;
+        ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
+        await EventService.LoadEvents(ListCriteria);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -54,8 +93,9 @@
 
         ArgumentNullException.ThrowIfNull(EventService);
         EventService.EventsUpdated += OnChanged;
+        Navigation.LocationChanged += NavigationOnLocationChanged;
 
-        await EventService.LoadEvents();
+        await EventService.LoadEvents(ListCriteria);
         // _isLoading = false;
         // triggers the component to rerender
         await InvokeAsync(StateHasChanged);
@@ -88,7 +128,21 @@
 
         var createdEvent = await EventService.CreateEvent(createEventRequest);
 
+        await EventService.LoadEvents(ListCriteria);
+
         await InvokeAsync(StateHasChanged);
+    }
+
+    private Task FilterEvents(MouseEventArgs arg)
+    {
+        // Build up the query parameters from the criteria object
+        var searchCriteria = new RouteValueDictionary(ListCriteria)
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        // Build the uri from the above (this will be relative to whatever route we're currently on)
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(searchCriteria));
+
+        return Task.CompletedTask;
     }
 
 }
