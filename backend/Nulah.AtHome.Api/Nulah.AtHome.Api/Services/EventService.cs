@@ -8,6 +8,7 @@ namespace Nulah.AtHome.Api.Services;
 internal class EventService
 {
 	public event EventHandler<List<BasicEventDto>>? EventsUpdated;
+	public List<BasicEventDto> Events { get; private set; } = new();
 
 	private EventManager EventManager => _serviceCollection.GetRequiredService<EventManager>();
 	private readonly IServiceProvider _serviceCollection;
@@ -23,8 +24,8 @@ internal class EventService
 	public async Task LoadEvents(EventListCriteria? listCriteria = null)
 	{
 		using var updateActivity = Telemetry.MyActivitySource.StartActivity(ActivityKind.Internal);
-		var events = await EventManager.GetEvents(listCriteria);
-		EventsUpdated?.Invoke(this, events);
+		Events = await EventManager.GetEvents(listCriteria);
+		EventsUpdated?.Invoke(this, Events);
 	}
 
 	/// <summary>

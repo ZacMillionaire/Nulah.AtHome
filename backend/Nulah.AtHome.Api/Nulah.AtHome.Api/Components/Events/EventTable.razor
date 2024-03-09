@@ -7,27 +7,6 @@
 @using System.Reflection
 @rendermode @(new InteractiveServerRenderMode(false))
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            <div class="mb-3 p-3 border rounded">
-                <EventForm FormSubmit="CreateEvent"/>
-            </div>
-        </div>
-        <div class="col">
-            <div class="mb-3 p-3 border rounded">
-                <EditForm Model="ListCriteria">
-                    <h3>Filter</h3>
-                    <div class="mb-3">
-                        <NullableBooleanSelector TrueText="With End Date" FalseText="Without End Date" NullText="All" @bind-Value="ListCriteria.HasEventDate"/>
-                    </div>
-                    <button @onclick="FilterEvents" class="btn btn-primary">Filter</button>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="event-table">
     <div class="event-table-header-row">
         <div class="event-table-header">
@@ -44,21 +23,12 @@
         </div>
         <div class="event-table-header"></div>
     </div>
-    @if (_isLoading)
-    {
-        // In the future this will simply disable the list to account for existing items already being available
-        // which means dragging the loop below up and making sure it doesn't throw a null reference exception on event service
-        <h2>Loading...</h2>
-    }
-    else
-    {
-        <div class="event-table-body">
-            @foreach (var eventDto in Events)
-            {
-                <EventTableRow EventDto="eventDto"/>
-            }
-        </div>
-    }
+    <div class="event-table-body">
+        @foreach (var eventDto in Events)
+        {
+            <EventTableRow EventDto="eventDto"/>
+        }
+    </div>
 </div>
 
 @code {
@@ -66,125 +36,34 @@
     [Inject]
     private EventService EventService { get; set; }
 
-    [Inject]
-    private NavigationManager Navigation { get; set; }
-
     private List<BasicEventDto> Events { get; set; } = new();
 
-    private bool _isLoading = true;
-
-    private EventListCriteria ListCriteria { get; set; } = new();
-
-    // A bunch of stuff below to build up list criteria from the query string that I wish I could do in a smarter way
-    // Probably could with some string split on ? then = into a dictionary that I use property reflection and set it on the
-    // list criteria but
-
-    #region Query Param Shit
-
-    // valid type conversions https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-8.0#query-strings
-
-    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.HasEventDate))]
-    private bool? CriteriaHasEventDate { get; set; }
-
-    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.BeforeEndDate))]
-    private DateTime? CriteriaBeforeEndDate { get; set; }
-
-    #endregion
-
-    private async void NavigationOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    protected override void OnInitialized()
     {
-        // TODO: maybe it's better to move the form submission and such to the page level?
-        // then I could probably just turn this component into something reactive and decouple it a bit?
-        
-        // This will be true if the user is navigating between routes. As we only want to act when the user navigates
-        // within this page eg, from Navigation.NavigateTo([with criteria query params]) or any other navigation event
-        // that _wasn't_ from Navigation.NavigateTo, we don't want to attempt to load events when the user is navigating away.
-        // https://blazor-university.com/routing/detecting-navigation-events/
-        // BUG: Unfortunately this will still be false if the user navigates back/forward :( This seems to be by design and I'm not sure of a way around it
-        // apart from faking history, or just removing this feature all together and only update the url on filter, but break page navigation.
-        if (e.IsNavigationIntercepted)
-            return;
-
-        await LoadEventsFromCriteria();
-    }
-
-    /// <summary>
-    /// Calls the event service to load events based on current criteria.
-    /// <para>
-    /// The criteria set is always from criteria properties, and always assumes they've been set appropriately
-    /// according to blazor component lifecycles (eg, OnParameters[SetAsync] has fired)
-    /// </para>
-    /// </summary>
-    private async Task LoadEventsFromCriteria()
-    {
-        _isLoading = true;
-        ListCriteria.HasEventDate = CriteriaHasEventDate;
-        ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
-        await EventService.LoadEvents(ListCriteria);
-        _isLoading = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-            return;
-
         ArgumentNullException.ThrowIfNull(EventService);
         EventService.EventsUpdated += OnChanged;
-        Navigation.LocationChanged += NavigationOnLocationChanged;
-
-        // Manually trigger this event on first load, as the user might be seeing this component for the first time
-        // by entering the url directly with query params.
-        await LoadEventsFromCriteria();
-        // _isLoading = false;
-        // triggers the component to rerender
-        await InvokeAsync(StateHasChanged);
+        base.OnInitialized();
     }
 
-    private void OnChanged(object? sender, List<BasicEventDto> e)
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
-        // Update is loading if it was previously changed to true elsewhere, eg, a hard refresh button was clicked
-        if (_isLoading)
-        {
-            _isLoading = false;
-        }
+        if (!firstRender)
+            return base.OnAfterRenderAsync(firstRender);
 
-        Events = e;
+        // For the first render, pull the latest events that have been loaded.
+        // If the event service has never loaded events before, an empty list will exist.
+        Events = EventService.Events;
+        InvokeAsync(StateHasChanged);
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void OnChanged(object? sender, List<BasicEventDto> updatedEventList)
+    {
+        Events = updatedEventList;
 
         InvokeAsync(StateHasChanged);
     }
 
-    private async Task CreateEvent(EventFormData eventFormData)
-    {
-        var createEventRequest = new NewBasicEventRequest()
-        {
-            Description = eventFormData.Description,
-            Start = eventFormData.Start,
-            End = eventFormData.End,
-            Tags = string.IsNullOrWhiteSpace(eventFormData.Tags)
-                ? []
-                : eventFormData.Tags.Split(",").ToList()
-        };
-
-        var createdEvent = await EventService.CreateEvent(createEventRequest);
-
-        await EventService.LoadEvents(ListCriteria);
-
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private Task FilterEvents(MouseEventArgs arg)
-    {
-        // Build up the query parameters from the criteria object
-        var searchCriteria = new RouteValueDictionary(ListCriteria)
-            .ToDictionary(x => x.Key, x => x.Value);
-
-        // Build the uri from the above (this will be relative to whatever route we're currently on)
-        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(searchCriteria));
-
-        return Task.CompletedTask;
-    }
-    
     public void Dispose()
     {
         EventService.EventsUpdated -= this.OnChanged;

@@ -1,4 +1,147 @@
 ﻿@page "/Events"
+@using Nulah.AtHome.Data
+@using Nulah.AtHome.Api.Services
+@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Models
 @rendermode InteractiveServer
 
-<EventTable/>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <EventForm FormSubmit="CreateEvent"/>
+            </div>
+        </div>
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <EditForm Model="ListCriteria">
+                    <h3>Filter</h3>
+                    <div class="mb-3">
+                        <NullableBooleanSelector TrueText="With End Date" FalseText="Without End Date" NullText="All" @bind-Value="ListCriteria.HasEventDate"/>
+                    </div>
+                    <button @onclick="FilterEvents" class="btn btn-primary">Filter</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+@if (_isLoading)
+{
+    // In the future this will simply disable the list to account for existing items already being available
+    // which means dragging the loop below up and making sure it doesn't throw a null reference exception on event service
+    <h2>Loading...</h2>
+}
+else
+{
+    <EventTable/>
+}
+
+@code {
+
+    #region Query Param Shit
+
+    // valid type conversions https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-8.0#query-strings
+
+    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.HasEventDate))]
+    private bool? CriteriaHasEventDate { get; set; }
+
+    [SupplyParameterFromQuery(Name = nameof(EventListCriteria.BeforeEndDate))]
+    private DateTime? CriteriaBeforeEndDate { get; set; }
+
+    #endregion
+
+    [Inject]
+    private EventService EventService { get; set; }
+
+    private bool _isLoading = true;
+    private EventListCriteria ListCriteria { get; set; } = new();
+    private string _pageUrlBase = string.Empty;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return base.OnAfterRenderAsync(firstRender);
+
+        // set this here for navigation events to prevent loading data when navigating away from the events page
+        // when using back/forward buttons
+        _pageUrlBase = $"{Navigation.BaseUri}Events";
+        Navigation.LocationChanged += test;
+
+        return LoadEventsFromCriteria();
+    }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; }
+
+    private async void test(object? sender, LocationChangedEventArgs e)
+    {
+        // Only load events if we're on the events page and we haven't "intercepted" navigation, which is blazor
+        // speak for, "the user explicitly interacted with a href link or non-programatic method".
+        // Now this doesn't include going back/forward as it's possible to load the events page, then press back to a different
+        // route and for the framework to think this is a programmatic event. Still not 100% certain if this is intended
+        // but this comment is here for whenever I want to attempt to reproduce it.
+        /*
+         have blazor project with 2 pages index and counter
+         counter has event subscription to location changed on navigation
+         user clicks counter link and that subscription is registered
+         user clicks the back button in their browser
+         location event will fire, and IsNavigationIntercepted will be false
+         user clicks counter link again
+         user clicks index link
+         IsNavigationIntercepted will be true
+         */
+        if (e.IsNavigationIntercepted || !Navigation.Uri.StartsWith(_pageUrlBase, StringComparison.InvariantCultureIgnoreCase))
+            return;
+
+        await LoadEventsFromCriteria();
+    }
+
+    /// <summary>
+    /// Calls the event service to load events based on current criteria.
+    /// <para>
+    /// The criteria set is always from criteria properties, and always assumes they've been set appropriately
+    /// according to blazor component lifecycles (eg, OnParameters[SetAsync] has fired)
+    /// </para>
+    /// </summary>
+    private async Task LoadEventsFromCriteria()
+    {
+        _isLoading = true;
+        ListCriteria.HasEventDate = CriteriaHasEventDate;
+        ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
+        await EventService.LoadEvents(ListCriteria);
+        _isLoading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CreateEvent(EventFormData eventFormData)
+    {
+        var createEventRequest = new NewBasicEventRequest()
+        {
+            Description = eventFormData.Description,
+            Start = eventFormData.Start,
+            End = eventFormData.End,
+            Tags = string.IsNullOrWhiteSpace(eventFormData.Tags)
+                ? []
+                : eventFormData.Tags.Split(",").ToList()
+        };
+
+        var createdEvent = await EventService.CreateEvent(createEventRequest);
+
+        await EventService.LoadEvents(ListCriteria);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task FilterEvents(MouseEventArgs arg)
+    {
+        // Build up the query parameters from the criteria object
+        var searchCriteria = new RouteValueDictionary(ListCriteria)
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        // Build the uri from the above (this will be relative to whatever route we're currently on)
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(searchCriteria));
+
+        return Task.CompletedTask;
+    }
+
+}
