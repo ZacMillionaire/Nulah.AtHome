@@ -3,7 +3,8 @@
 @using Nulah.AtHome.Api.Services
 @using Nulah.AtHome.Data.DTO.Events
 @using Nulah.AtHome.Api.Models
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(false))
+@implements IDisposable
 
 <div class="container-fluid">
     <div class="row">
@@ -57,23 +58,30 @@ else
     private EventListCriteria ListCriteria { get; set; } = new();
     private string _pageUrlBase = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        // set this here for navigation events to prevent loading data when navigating away from the events page
+        // when using back/forward buttons
+        _pageUrlBase = $"{Navigation.BaseUri}Events";
+        Navigation.LocationChanged += OnLocationChanged;
+
+        base.OnInitialized();
+    }
+
     protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return base.OnAfterRenderAsync(firstRender);
 
-        // set this here for navigation events to prevent loading data when navigating away from the events page
-        // when using back/forward buttons
-        _pageUrlBase = $"{Navigation.BaseUri}Events";
-        Navigation.LocationChanged += test;
-
+        // Load initial events on first render. While we could do this in OnInitialised, doing it here
+        // ensures that the loading message has been shown and is visible before actually loading.
         return LoadEventsFromCriteria();
     }
 
     [Inject]
     private NavigationManager Navigation { get; set; }
 
-    private async void test(object? sender, LocationChangedEventArgs e)
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         // Only load events if we're on the events page and we haven't "intercepted" navigation, which is blazor
         // speak for, "the user explicitly interacted with a href link or non-programatic method".
@@ -103,14 +111,18 @@ else
     /// according to blazor component lifecycles (eg, OnParameters[SetAsync] has fired)
     /// </para>
     /// </summary>
-    private async Task LoadEventsFromCriteria()
+    private Task LoadEventsFromCriteria()
     {
-        _isLoading = true;
-        ListCriteria.HasEventDate = CriteriaHasEventDate;
-        ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
-        await EventService.LoadEvents(ListCriteria);
-        _isLoading = false;
-        await InvokeAsync(StateHasChanged);
+        return InvokeAsync(async () =>
+        {
+            _isLoading = true;
+            StateHasChanged();
+            ListCriteria.HasEventDate = CriteriaHasEventDate;
+            ListCriteria.BeforeEndDate = CriteriaBeforeEndDate;
+            await EventService.LoadEvents(ListCriteria);
+            _isLoading = false;
+            StateHasChanged();
+        });
     }
 
     private async Task CreateEvent(EventFormData eventFormData)
@@ -142,6 +154,12 @@ else
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(searchCriteria));
 
         return Task.CompletedTask;
+    }
+
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 
 }

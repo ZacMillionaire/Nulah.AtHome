@@ -6,6 +6,7 @@
 @using System.Text.Encodings.Web
 @using System.Reflection
 @rendermode @(new InteractiveServerRenderMode(false))
+@implements IDisposable
 
 <div class="event-table">
     <div class="event-table-header-row">
@@ -41,7 +42,7 @@
     protected override void OnInitialized()
     {
         ArgumentNullException.ThrowIfNull(EventService);
-        EventService.EventsUpdated += OnChanged;
+        EventService.EventsUpdated += EventsUpdated;
         base.OnInitialized();
     }
 
@@ -57,7 +58,7 @@
         return base.OnAfterRenderAsync(firstRender);
     }
 
-    private void OnChanged(object? sender, List<BasicEventDto> updatedEventList)
+    private void EventsUpdated(object? sender, List<BasicEventDto> updatedEventList)
     {
         Events = updatedEventList;
 
@@ -66,6 +67,6 @@
 
     public void Dispose()
     {
-        EventService.EventsUpdated -= this.OnChanged;
+        EventService.EventsUpdated -= EventsUpdated;
     }
 }

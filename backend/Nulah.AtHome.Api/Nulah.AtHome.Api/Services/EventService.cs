@@ -15,9 +15,6 @@ internal class EventService
 
 	public EventService(IServiceProvider services)
 	{
-		// There's some weird things going on with wasm or whatever blazor mode I have that will call this once for
-		// the initial request, and then again when it opens the signalr connection?
-		// It doesn't seem to break any events so best to ignore it
 		_serviceCollection = services;
 	}
 
@@ -98,5 +95,10 @@ internal class EventService
 
 			throw;
 		}
+	}
+
+	public async Task<BasicEventStatsDto> GetStats()
+	{
+		return await EventManager.GetStats();
 	}
 }

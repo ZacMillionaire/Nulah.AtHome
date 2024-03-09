@@ -1,13 +1,59 @@
 ﻿@page "/"
-@*
- this is here to make sure the button triggers an update with the ui for any components (eventlist)
- without it clicking the button would work but the list wouldn't update (i think?)
- 
- this also puts the app (for this page) into web socket mode
- *@
+@using Nulah.AtHome.Api.Services
+@using Nulah.AtHome.Data.DTO.Events
+@rendermode @(new InteractiveServerRenderMode(false))
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="card">
+    <div class="card-body">
+        <h3>Total Basic Events: @EventStats.Total</h3>
+        <h4>Tagged</h4>
+        <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: @(EventStats.Total > 0 ? (EventStats.WithTags / (double)EventStats.Total) * 100 : 0)%" aria-valuemin="0" aria-valuemax="100">
+                With tags: @EventStats.WithTags
+            </div>
+            <div class="progress-bar bg-danger" role="progressbar"
+                 style="width: @(EventStats.Total > 0 ? (EventStats.WithoutTags / (double)EventStats.Total) * 100 : 0)%" aria-valuemin="0" aria-valuemax="100">
+                Without tags: @EventStats.WithoutTags
+            </div>
+        </div>
+        <h4>End Dates</h4>
+        <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: @(EventStats.Total > 0 ? (EventStats.WithEndDate / (double)EventStats.Total) * 100 : 0)%" aria-valuemin="0" aria-valuemax="100">
+                With end date: @EventStats.WithEndDate
+            </div>
+            <div class="progress-bar bg-danger" role="progressbar"
+                 style="width: @(EventStats.Total > 0 ? (EventStats.WithoutEndDate / (double)EventStats.Total) * 100 : 0)%" aria-valuemin="0" aria-valuemax="100">
+                Without end date: @EventStats.WithoutEndDate
+            </div>
+        </div>
+    </div>
+</div>
 
-Welcome to your new app.
+@code
+{
+    [Inject]
+    private EventService EventService { get; set; }
+
+    private BasicEventStatsDto EventStats { get; set; } = new();
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return base.OnAfterRenderAsync(firstRender);
+
+        return InvokeAsync(async () =>
+        {
+            await LoadStats();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadStats()
+    {
+        EventStats = await EventService.GetStats();
+    }
+}

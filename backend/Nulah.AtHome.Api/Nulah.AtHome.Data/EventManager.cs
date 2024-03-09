@@ -116,6 +116,28 @@ public class EventManager
 		}
 	}
 
+	public async Task<BasicEventStatsDto> GetStats()
+	{
+		var events = await _context.BasicEvents
+			.Select(x => new
+			{
+				HasEndDate = x.End == null,
+				HasTags = x.Tags.Count > 0
+			})
+			.ToListAsync();
+
+		var stats = new BasicEventStatsDto()
+		{
+			Total = events.Count,
+			WithTags = events.Count(x => x.HasTags),
+			WithoutTags = events.Count(x => !x.HasTags),
+			WithEndDate = events.Count(x => x.HasEndDate),
+			WithoutEndDate = events.Count(x => !x.HasEndDate),
+		};
+
+		return stats;
+	}
+
 
 	private Expression<Func<BasicEvent, bool>> Build(EventListCriteria? criteria)
 	{
