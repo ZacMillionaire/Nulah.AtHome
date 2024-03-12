@@ -1,0 +1,166 @@
+﻿@using Nulah.AtHome.Data.DTO
+@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Components.Pages
+@using Nulah.AtHome.ComponentTests.Events.TestComparisons
+@inherits EventComponentTestContext
+
+@code {
+
+    [Fact]
+    public void EventsPageRendersLoadingWhileEventsLoad()
+    {
+        var cut = RenderComponent<Events>();
+
+        cut.MarkupMatches(RenderComponent<EventPage_Loading>());
+    }
+
+    [Fact]
+    public void EventsPageRendersEmptyTableWithoutEvents()
+    {
+        var cut = RenderComponent<Events>();
+
+        cut.MarkupMatches(RenderComponent<EventPage_Loading>());
+
+        // All TestEventService delays are set to 1 second, so advancing the time by half a second should still show us a loading indicator
+        TestTimeProvider.Advance(TimeSpan.FromSeconds(0.5));
+
+        cut.Render();
+
+        cut.MarkupMatches(RenderComponent<EventPage_Loading>());
+
+        // Advance the remaining half second
+        TestTimeProvider.Advance(TimeSpan.FromSeconds(0.5));
+
+        cut.Render();
+
+        cut.MarkupMatches(RenderComponent<EventPage_Loaded_NoEvents>());
+    }
+
+    [Fact]
+    public void TableRendersEmptyBody()
+    {
+        // Act
+        var cut = Render(@<EventTable/>);
+
+        // Assert
+        cut.MarkupMatches(@<div class="event-table">
+            <div class="event-table-header-row">
+                <div class="event-table-header">
+                    Description
+                </div>
+                <div class="event-table-header">
+                    Start
+                </div>
+                <div class="event-table-header">
+                    End
+                </div>
+                <div class="event-table-header">
+                    Tags
+                </div>
+                <div class="event-table-header"></div>
+            </div>
+            <div class="event-table-body"></div>
+        </div>);
+    }
+
+    [Fact]
+    public async void TableRendersBodyWhenEventsUpdate()
+    {
+        // Act
+        var cut = RenderComponent<EventTable>();
+
+        var newEventRequest = new NewBasicEventRequest()
+        {
+            Description = "Test Description",
+            Start = DateTimeOffset.Now,
+            Tags = ["tag1", "tag2"]
+        };
+
+        await EventService.CreateEvent(newEventRequest);
+
+        cut.Render();
+
+        // Assert
+        cut.MarkupMatches(@<div class="event-table">
+            <div class="event-table-header-row">
+                <div class="event-table-header">
+                    Description
+                </div>
+                <div class="event-table-header">
+                    Start
+                </div>
+                <div class="event-table-header">
+                    End
+                </div>
+                <div class="event-table-header">
+                    Tags
+                </div>
+                <div class="event-table-header"></div>
+            </div>
+            <div class="event-table-body">
+                @foreach (var eventDto in EventService.Events)
+                {
+                    <EventTableRow EventDto="eventDto"/>
+                }
+            </div>
+        </div>);
+    }
+
+    [Fact]
+    public async void TableRendersBodyWithExpectedEventsOnFirstRender()
+    {
+        var eventDtoList = new List<BasicEventDto>()
+        {
+            new()
+            {
+                Description = "Test Description 1",
+                Start = DateTimeOffset.Now,
+                Tags = [new TagDto() { Name = "tag1" }, new TagDto() { Name = "tag2" }]
+            },
+            new()
+            {
+                Description = "Test Description 2",
+                Start = DateTimeOffset.Now.AddDays(2),
+                Tags = [new TagDto() { Name = "tag1" }, new TagDto() { Name = "tag2" }, new TagDto() { Name = "tag3" }]
+            },
+            new()
+            {
+                Description = "Test Description 3",
+                Start = DateTimeOffset.Now.AddHours(3),
+                Tags = [new TagDto() { Name = "tag1" }, new TagDto() { Name = "tag3" }]
+            }
+        };
+
+        EventService.Events.Clear();
+        EventService.Events.AddRange(eventDtoList);
+
+        // Act
+        var cut = Render(@<EventTable/>);
+
+        // Assert
+        cut.MarkupMatches(@<div class="event-table">
+            <div class="event-table-header-row">
+                <div class="event-table-header">
+                    Description
+                </div>
+                <div class="event-table-header">
+                    Start
+                </div>
+                <div class="event-table-header">
+                    End
+                </div>
+                <div class="event-table-header">
+                    Tags
+                </div>
+                <div class="event-table-header"></div>
+            </div>
+            <div class="event-table-body">
+                @foreach (var eventDto in eventDtoList)
+                {
+                    <EventTableRow EventDto="eventDto"/>
+                }
+            </div>
+        </div>);
+    }
+
+}
