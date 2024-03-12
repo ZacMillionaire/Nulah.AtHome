@@ -52,7 +52,7 @@ else
     #endregion
 
     [Inject]
-    private EventService EventService { get; set; }
+    private IEventService EventService { get; set; }
 
     private bool _isLoading = true;
     private EventListCriteria ListCriteria { get; set; } = new();

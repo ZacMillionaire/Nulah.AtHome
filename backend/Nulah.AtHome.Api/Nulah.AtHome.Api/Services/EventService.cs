@@ -5,7 +5,7 @@ using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Api.Services;
 
-internal class EventService
+internal class EventService : IEventService
 {
 	public event EventHandler<List<BasicEventDto>>? EventsUpdated;
 	public List<BasicEventDto> Events { get; private set; } = new();

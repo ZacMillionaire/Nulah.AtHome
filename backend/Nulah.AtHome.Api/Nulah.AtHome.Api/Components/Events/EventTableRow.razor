@@ -28,7 +28,7 @@
     public BasicEventDto EventDto { get; set; } = default!;
 
     [Inject]
-    private EventService EventService { get; set; } = default!;
+    private IEventService EventService { get; set; } = default!;
 
     protected override void OnInitialized()
     {
