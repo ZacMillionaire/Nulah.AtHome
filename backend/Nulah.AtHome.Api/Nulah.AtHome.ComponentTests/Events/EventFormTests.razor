@@ -1,0 +1,35 @@
+﻿@using Nulah.AtHome.Data.DTO
+@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Components.Pages
+@using Nulah.AtHome.Api.Models
+@using Nulah.AtHome.ComponentTests.Events.TestComparisons
+@inherits EventComponentTestContext
+
+@code {
+
+    private Task SubmitForm(EventFormData formData)
+    {
+        return Task.CompletedTask;
+    }
+
+    [Fact]
+    public void EventFormLoadsWithoutValidations()
+    {
+        var cut = RenderComponent<EventForm>(x => { x.Add(y => y.FormSubmit, SubmitForm); });
+
+        cut.MarkupMatches(RenderComponent<EventForm_Empty>());
+    }
+
+    [Fact]
+    public async void EventFormDisplaysValidationErrorsWithNoValues()
+    {
+        var cut = RenderComponent<EventForm>(x => { x.Add(y => y.FormSubmit, SubmitForm); });
+
+        var submitButton = cut.Find("button[type=\"submit\"]");
+
+        await submitButton.ClickAsync(null);
+
+        cut.MarkupMatches(RenderComponent<EventForm_AllValidationsVisible>());
+    }
+
+}

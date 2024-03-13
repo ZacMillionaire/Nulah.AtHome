@@ -1,0 +1,31 @@
+﻿@using Nulah.AtHome.Data.DTO.Events
+<div class="event-table">
+    <div class="event-table-header-row">
+        <div class="event-table-header">
+            Description
+        </div>
+        <div class="event-table-header">
+            Start
+        </div>
+        <div class="event-table-header">
+            End
+        </div>
+        <div class="event-table-header">
+            Tags
+        </div>
+        <div class="event-table-header"></div>
+    </div>
+    <div class="event-table-body">
+        @foreach (var eventDto in Events)
+        {
+            <EventTableRow EventDto="eventDto"/>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public List<BasicEventDto> Events { get; set; } = new();
+
+}

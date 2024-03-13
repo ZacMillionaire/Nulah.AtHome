@@ -43,24 +43,7 @@
         var cut = Render(@<EventTable/>);
 
         // Assert
-        cut.MarkupMatches(@<div class="event-table">
-            <div class="event-table-header-row">
-                <div class="event-table-header">
-                    Description
-                </div>
-                <div class="event-table-header">
-                    Start
-                </div>
-                <div class="event-table-header">
-                    End
-                </div>
-                <div class="event-table-header">
-                    Tags
-                </div>
-                <div class="event-table-header"></div>
-            </div>
-            <div class="event-table-body"></div>
-        </div>);
+        cut.MarkupMatches(RenderComponent<EventTable_NoEvent_EmptyBody>());
     }
 
     [Fact]
@@ -81,29 +64,10 @@
         cut.Render();
 
         // Assert
-        cut.MarkupMatches(@<div class="event-table">
-            <div class="event-table-header-row">
-                <div class="event-table-header">
-                    Description
-                </div>
-                <div class="event-table-header">
-                    Start
-                </div>
-                <div class="event-table-header">
-                    End
-                </div>
-                <div class="event-table-header">
-                    Tags
-                </div>
-                <div class="event-table-header"></div>
-            </div>
-            <div class="event-table-body">
-                @foreach (var eventDto in EventService.Events)
-                {
-                    <EventTableRow EventDto="eventDto"/>
-                }
-            </div>
-        </div>);
+        cut.MarkupMatches(RenderComponent<EventTable_Loaded_WithEvents>(x =>
+        {
+            x.Add(y => y.Events, EventService.Events);
+        }));
     }
 
     [Fact]
@@ -138,29 +102,10 @@
         var cut = Render(@<EventTable/>);
 
         // Assert
-        cut.MarkupMatches(@<div class="event-table">
-            <div class="event-table-header-row">
-                <div class="event-table-header">
-                    Description
-                </div>
-                <div class="event-table-header">
-                    Start
-                </div>
-                <div class="event-table-header">
-                    End
-                </div>
-                <div class="event-table-header">
-                    Tags
-                </div>
-                <div class="event-table-header"></div>
-            </div>
-            <div class="event-table-body">
-                @foreach (var eventDto in eventDtoList)
-                {
-                    <EventTableRow EventDto="eventDto"/>
-                }
-            </div>
-        </div>);
+        cut.MarkupMatches(RenderComponent<EventTable_Loaded_WithEvents>(x =>
+        {
+            x.Add(y => y.Events, eventDtoList);
+        }));
     }
 
 }
