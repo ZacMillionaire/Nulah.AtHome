@@ -36,7 +36,7 @@
 @code
 {
     [Inject]
-    private EventService EventService { get; set; }
+    private IEventService EventService { get; set; }
 
     private BasicEventStatsDto EventStats { get; set; } = new();
 

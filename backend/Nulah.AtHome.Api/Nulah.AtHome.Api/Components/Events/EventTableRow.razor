@@ -62,6 +62,8 @@
         EventDto = updatedEvent;
 
         _showEditForm = false;
+        
+        // TODO: Add a trigger to reload events so criteria filters still apply?
 
         await InvokeAsync(StateHasChanged);
     }
