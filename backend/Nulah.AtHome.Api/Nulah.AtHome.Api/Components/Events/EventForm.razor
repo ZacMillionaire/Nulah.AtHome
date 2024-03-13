@@ -85,9 +85,10 @@
                 await FormSubmit(FormData);
                 // something loading state ended
             }
-            catch
+            catch (Exception ex)
             {
-                FormData.GenericErrors = "Something went wrong :(((";
+                // TODO: decide if I want the exception message just dumped out or not. Currently I don't really care lmao
+                FormData.GenericErrors = ex.GetBaseException().Message;
             }
             finally
             {

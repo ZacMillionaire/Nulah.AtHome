@@ -1,35 +1,161 @@
-﻿@using Nulah.AtHome.Data.DTO
-@using Nulah.AtHome.Data.DTO.Events
-@using Nulah.AtHome.Api.Components.Pages
-@using Nulah.AtHome.Api.Models
-@using Nulah.AtHome.ComponentTests.Events.TestComparisons
+﻿@using Nulah.AtHome.Api.Models
+@using Nulah.AtHome.ComponentTests.Events.TestComparisons.EventForm
 @inherits EventComponentTestContext
 
 @code {
 
+    /// <summary>
+    /// Dummy submit event to trigger form model based validations.
+    /// Should always result in a successful form submission.
+    /// </summary>
     private Task SubmitForm(EventFormData formData)
     {
         return Task.CompletedTask;
     }
 
-    [Fact]
-    public void EventFormLoadsWithoutValidations()
+    /// <summary>
+    /// Dummy submit event to trigger errors when submitting a form
+    /// </summary>
+    private Task SubmitFormWithThrownException(EventFormData formData, string exceptionMessage)
     {
-        var cut = RenderComponent<EventForm>(x => { x.Add(y => y.FormSubmit, SubmitForm); });
+        throw new Exception(exceptionMessage);
+    }
+
+    private const string DescriptionInput = "input#description";
+    private const string StartTimeInput = "input#starttime";
+    private const string EndTimeInput = "input#endtime";
+    private const string SubmitButtonTarget = "button[type=\"submit\"]";
+
+    [Fact]
+    public void EventForm_Loads_Without_Validations()
+    {
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, SubmitForm);
+        });
 
         cut.MarkupMatches(RenderComponent<EventForm_Empty>());
     }
 
     [Fact]
-    public async void EventFormDisplaysValidationErrorsWithNoValues()
+    public async void EventForm_Displays_ValidationErrors_With_NoValues()
     {
-        var cut = RenderComponent<EventForm>(x => { x.Add(y => y.FormSubmit, SubmitForm); });
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, SubmitForm);
+        });
 
-        var submitButton = cut.Find("button[type=\"submit\"]");
-
-        await submitButton.ClickAsync(null);
+        await cut.Find(SubmitButtonTarget)
+            .ClickAsync(null);
 
         cut.MarkupMatches(RenderComponent<EventForm_AllValidationsVisible>());
+    }
+
+    [Fact]
+    public async void EventForm_Displays_ServerError_With_ValidValues()
+    {
+        var description = $"Test Description {Guid.NewGuid()}";
+        var startTime = DateTimeOffset.Now;
+        var endTime = DateTimeOffset.Now.AddDays(1);
+        var expectedError = $"Exception occurred when submitting form {Guid.NewGuid()}";
+
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, formData => SubmitFormWithThrownException(formData, expectedError));
+        });
+
+        cut.Find(DescriptionInput)
+            .Change(description);
+        cut.Find(StartTimeInput)
+            .Change(startTime.ToString("s"));
+        cut.Find(EndTimeInput)
+            .Change(endTime.ToString("s"));
+
+        await cut.Find(SubmitButtonTarget)
+            .ClickAsync(null);
+
+        cut.MarkupMatches(RenderComponent<EventForm_ServerError>(x =>
+        {
+            x.Add(y => y.Description, description)
+                .Add(y => y.StartTime, startTime)
+                .Add(y => y.EndTime, endTime)
+                .Add(y => y.ExpectedServerError, expectedError);
+        }));
+    }
+
+    [Fact]
+    public async void EventForm_Displays_DescriptionError_With_ValidStartDate()
+    {
+        var startTime = DateTimeOffset.Now;
+
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, SubmitForm);
+        });
+
+        cut.Find(StartTimeInput)
+            .Change(startTime.ToString("s"));
+
+        await cut.Find(SubmitButtonTarget)
+            .ClickAsync(null);
+
+        cut.MarkupMatches(RenderComponent<EventForm_ValidationError_Description>(x =>
+        {
+            x.Add(y => y.StartTime, startTime);
+        }));
+    }
+
+    [Fact]
+    public async void EventForm_Displays_StartDateError_With_ValidDescription()
+    {
+        var description = $"Test Description {Guid.NewGuid()}";
+
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, SubmitForm);
+        });
+
+        cut.Find(DescriptionInput)
+            .Change(description);
+
+        await cut.Find(SubmitButtonTarget)
+            .ClickAsync(null);
+
+        cut.MarkupMatches(RenderComponent<EventForm_ValidationError_StartDate>(x =>
+        {
+            x.Add(y => y.Description, description);
+        }));
+    }
+
+
+    [Fact]
+    public async void EventForm_Displays_EndDateError_With_ValidDescriptionStartDate()
+    {
+        var description = $"Test Description {Guid.NewGuid()}";
+        var startTime = DateTimeOffset.Now;
+        var endTime = DateTimeOffset.Now;
+
+        var cut = RenderComponent<EventForm>(x =>
+        {
+            x.Add(y => y.FormSubmit, SubmitForm);
+        });
+
+        cut.Find(DescriptionInput)
+            .Change(description);
+        cut.Find(StartTimeInput)
+            .Change(startTime.ToString("s"));
+        cut.Find(EndTimeInput)
+            .Change(endTime.ToString("s"));
+
+        await cut.Find(SubmitButtonTarget)
+            .ClickAsync(null);
+
+        cut.MarkupMatches(RenderComponent<EventForm_ValidationError_EndDate>(x =>
+        {
+            x.Add(y => y.Description, description)
+                .Add(y => y.StartTime, startTime)
+                .Add(y => y.EndTime, endTime);
+        }));
     }
 
 }
