@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Nulah.AtHome.Api.Components;
+using Nulah.AtHome.Api.Models;
 using Nulah.AtHome.Api.Services;
 using Nulah.AtHome.Data;
 using OpenTelemetry.Exporter;
@@ -19,6 +21,10 @@ public class Program
 	public static void Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
+		
+		builder.Configuration.AddEnvironmentVariables(prefix: "NulahAtHome_");
+
+		AppSettingsPrecheck(builder);
 
 		builder.Services.AddRazorComponents()
 			.AddInteractiveServerComponents();
@@ -39,10 +45,11 @@ public class Program
 		builder.Services.AddEndpointsApiExplorer();
 		builder.Services.AddSwaggerGen();
 
-		builder.Services.AddDbContext<AppDbContext>(dbContextOptions =>
+		builder.Services.AddDbContext<AppDbContext>((serviceProvider, dbContextOptions) =>
 			{
+				var appsettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>();
 				//docker run --name some-postgis -p 55432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgis/postgis
-				dbContextOptions.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"),
+				dbContextOptions.UseNpgsql(appsettings.Value.ConnectionStrings.Postgres,
 					// required to have postgis functionality
 					x => x.UseNetTopologySuite());
 			}
@@ -95,6 +102,17 @@ public class Program
 		app.Run();
 	}
 
+	private static void AppSettingsPrecheck(WebApplicationBuilder builder)
+	{
+		// Check that if we have a value for Seq, it can create a valid Uri object
+		if (!Uri.TryCreate(builder.Configuration.GetConnectionString("Seq"), UriKind.Absolute, out _))
+		{
+			throw new Exception("SEQ configuration is not empty and not a valid address");
+		}
+
+		builder.Services.Configure<AppSettings>(builder.Configuration);
+	}
+
 	private static void AddDependencies(WebApplicationBuilder builder)
 	{
 		builder.Services.AddScoped<EventManager>();
@@ -122,16 +140,21 @@ public class Program
 					})
 				)
 				//.AddOtlpExporter()
-				.AddConsoleExporter()
-				.AddOtlpExporter(exporter =>
+				.AddConsoleExporter();
+
+			if (builder.Configuration.GetConnectionString("Seq") is { } seqEndpoint
+			    && !string.IsNullOrWhiteSpace(seqEndpoint))
+			{
+				opts.AddOtlpExporter(exporter =>
 				{
 					// The full endpoint path is required here, when using
 					// the `HttpProtobuf` protocol option.
-					exporter.Endpoint = new Uri(builder.Configuration.GetConnectionString("Seq"));
+					exporter.Endpoint = new Uri(seqEndpoint);
 					exporter.Protocol = OtlpExportProtocol.HttpProtobuf;
 					// Optional `X-Seq-ApiKey` header for authentication, if required
 					//exporter.Headers = "X-Seq-ApiKey=builder.Configuration.GetValue<string>("Logging:Seq:ApiKey")";
 				});
+			}
 		}));
 
 		builder.Logging.AddOpenTelemetry(opts =>
@@ -141,23 +164,28 @@ public class Program
 			opts.IncludeFormattedMessage = true;
 
 			opts.SetResourceBuilder(ResourceBuilder.CreateDefault()
-					.AddService(serviceName: ServiceName, serviceVersion: ServiceVersion)
-					.AddAttributes(new Dictionary<string, object>
-					{
-						// Add any desired resource attributes here
-						["deployment.environment"] = "development"
-					})
-				)
-				//.AddConsoleExporter()
-				.AddOtlpExporter(exporter =>
+				.AddService(serviceName: ServiceName, serviceVersion: ServiceVersion)
+				.AddAttributes(new Dictionary<string, object>
+				{
+					// Add any desired resource attributes here
+					["deployment.environment"] = "development"
+				})
+			);
+			//.AddConsoleExporter()
+
+			if (builder.Configuration.GetConnectionString("Seq") is { } seqEndpoint
+			    && !string.IsNullOrWhiteSpace(seqEndpoint))
+			{
+				opts.AddOtlpExporter(exporter =>
 				{
 					// The full endpoint path is required here, when using
 					// the `HttpProtobuf` protocol option.
-					exporter.Endpoint = new Uri(builder.Configuration.GetConnectionString("Seq"));
+					exporter.Endpoint = new Uri(seqEndpoint);
 					exporter.Protocol = OtlpExportProtocol.HttpProtobuf;
 					// Optional `X-Seq-ApiKey` header for authentication, if required
 					//exporter.Headers = "X-Seq-ApiKey=builder.Configuration.GetValue<string>("Logging:Seq:ApiKey")";
 				});
+			}
 		});
 
 		builder.Services.AddOpenTelemetry()
@@ -168,13 +196,20 @@ public class Program
 					.ConfigureResource(r => r.AddService(serviceName: ServiceName, serviceVersion: ServiceVersion))
 					.AddAspNetCoreInstrumentation()
 					.AddNulahDataInstrumentation()
-					.AddConsoleExporter()
-					.AddOtlpExporter(opt =>
+					.AddConsoleExporter();
+
+				if (builder.Configuration.GetConnectionString("Seq") is { } seqEndpoint
+				    && !string.IsNullOrWhiteSpace(seqEndpoint))
+				{
+					// This doesn't seem to trace correctly with SEQ yet so I'm unsure of if it's set up correctly or if
+					// it's due to blazor specific tracing behaviour
+					tracing.AddOtlpExporter(opt =>
 					{
-						opt.Endpoint = new Uri(builder.Configuration.GetConnectionString("Seq"));
+						opt.Endpoint = new Uri(seqEndpoint);
 						opt.Protocol = OtlpExportProtocol.HttpProtobuf;
 						//opt.Headers = "X-Seq-ApiKey=builder.Configuration.GetValue<string>("Logging:Seq:ApiKey")";
 					});
+				}
 			})
 			.WithMetrics(metrics =>
 			{

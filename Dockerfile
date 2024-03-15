@@ -11,14 +11,6 @@ COPY ["/backend/Nulah.AtHome.Api/Nulah.AtHome.Data/", "Nulah.AtHome.Data/"]
 WORKDIR "Nulah.AtHome.Api/"
 RUN dotnet build "Nulah.AtHome.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# build the frontend
-FROM node as frontendbuild
-COPY ["/frontend/", "frontend/"]
-RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
-WORKDIR /frontend
-RUN npm install
-RUN npm run build
-
 # publish the backend
 FROM backendbuild AS backendpublish
 ARG BUILD_CONFIGURATION=Release
@@ -30,8 +22,4 @@ EXPOSE 8080
 WORKDIR /app
 # copy the published backend
 COPY --from=backendpublish /app/publish .
-# copy the built frontend static files into the published wwwroot folder
-COPY --from=frontendbuild /frontend/build ./wwwroot
-# expose the wwwroot volume to hint to people that they can change the frontend with whatever they want
-VOLUME /app/wwwroot
 ENTRYPOINT ["dotnet", "Nulah.AtHome.Api.dll"]
