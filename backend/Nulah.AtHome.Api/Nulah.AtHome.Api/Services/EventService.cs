@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Nulah.AtHome.Data;
+using Nulah.AtHome.Data.Criteria;
 using Nulah.AtHome.Data.DTO.Events;
 using OpenTelemetry.Trace;
 

@@ -7,7 +7,7 @@ public static class Telemetry
 {
 	private const string ServiceName = "Nulah.AtHome.Data";
 
-	public static ActivitySource ActivitySource => new(ServiceName, "0.0.1");
+	public static ActivitySource ActivitySource => new(ServiceName, "2024.0.0");
 
 	/// <summary>
 	/// Adds the Nulah.AtHome.Data instrumentation source

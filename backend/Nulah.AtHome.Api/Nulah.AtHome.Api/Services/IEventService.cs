@@ -1,4 +1,4 @@
-﻿using Nulah.AtHome.Data;
+﻿using Nulah.AtHome.Data.Criteria;
 using Nulah.AtHome.Data.DTO.Events;
 
 namespace Nulah.AtHome.Api.Services;

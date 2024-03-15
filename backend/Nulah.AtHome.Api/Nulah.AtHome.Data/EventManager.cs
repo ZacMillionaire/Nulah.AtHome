@@ -1,8 +1,7 @@
 ﻿using System.Diagnostics;
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Nulah.AtHome.Data.Converters;
+using Nulah.AtHome.Data.Criteria;
 using Nulah.AtHome.Data.DTO;
 using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models;
@@ -10,12 +9,6 @@ using Nulah.AtHome.Data.Models.Events;
 using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Data;
-
-public class EventListCriteria
-{
-	public bool? HasEventDate { get; set; }
-	public DateTimeOffset? BeforeEndDate { get; set; }
-}
 
 public class EventManager
 {
@@ -31,7 +24,7 @@ public class EventManager
 	public async Task<List<BasicEventDto>> GetEvents(EventListCriteria? criteria = null)
 	{
 		return await _context.BasicEvents
-			.Where(Build(criteria))
+			.WithCriteria(criteria?.Build())
 			.Select(x => new BasicEventDto()
 			{
 				Description = x.Description,
@@ -139,37 +132,37 @@ public class EventManager
 	}
 
 
-	private Expression<Func<BasicEvent, bool>> Build(EventListCriteria? criteria)
-	{
-		if (criteria == null)
-		{
-			return x => true;
-		}
-
-		Expression<Func<BasicEvent, bool>>? baseFunc = null;
-
-		if (criteria.HasEventDate.HasValue)
-		{
-			if (criteria.HasEventDate.Value)
-			{
-				baseFunc = baseFunc.And(x => x.End != null);
-			}
-			else
-			{
-				baseFunc = baseFunc.And(x => x.End == null);
-			}
-		}
-
-		// Return an empty expression
-		baseFunc ??= x => true;
-
-		if (baseFunc.CanReduce)
-		{
-			baseFunc.Reduce();
-		}
-
-		return baseFunc;
-	}
+	// private Expression<Func<BasicEvent, bool>> BuildEventListCriteria(EventListCriteria? criteria)
+	// {
+	// 	if (criteria == null)
+	// 	{
+	// 		return x => true;
+	// 	}
+	//
+	// 	Expression<Func<BasicEvent, bool>>? baseFunc = null;
+	//
+	// 	if (criteria.HasEventDate.HasValue)
+	// 	{
+	// 		if (criteria.HasEventDate.Value)
+	// 		{
+	// 			baseFunc = baseFunc.And(x => x.End != null);
+	// 		}
+	// 		else
+	// 		{
+	// 			baseFunc = baseFunc.And(x => x.End == null);
+	// 		}
+	// 	}
+	//
+	// 	// Return an "empty" expression if we have a criteria object, but no criteria to act on
+	// 	baseFunc ??= x => true;
+	//
+	// 	if (baseFunc.CanReduce)
+	// 	{
+	// 		baseFunc.Reduce();
+	// 	}
+	//
+	// 	return baseFunc;
+	// }
 
 	private async Task<BasicEventDto> UpdateEventAsync(UpdateBasicEventRequest updateBasicEventRequest)
 	{
