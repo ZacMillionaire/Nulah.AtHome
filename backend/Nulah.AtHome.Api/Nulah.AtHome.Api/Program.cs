@@ -21,7 +21,7 @@ public class Program
 	public static void Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
-		
+
 		builder.Configuration.AddEnvironmentVariables(prefix: "NulahAtHome_");
 
 		AppSettingsPrecheck(builder);
@@ -105,7 +105,8 @@ public class Program
 	private static void AppSettingsPrecheck(WebApplicationBuilder builder)
 	{
 		// Check that if we have a value for Seq, it can create a valid Uri object
-		if (!Uri.TryCreate(builder.Configuration.GetConnectionString("Seq"), UriKind.Absolute, out _))
+		if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Seq"))
+		    && !Uri.TryCreate(builder.Configuration.GetConnectionString("Seq"), UriKind.Absolute, out _))
 		{
 			throw new Exception("SEQ configuration is not empty and not a valid address");
 		}

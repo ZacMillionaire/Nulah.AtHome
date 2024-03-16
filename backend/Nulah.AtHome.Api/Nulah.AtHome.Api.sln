@@ -8,13 +8,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{78422028
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.UnitTests", "Nulah.AtHome.UnitTests\Nulah.AtHome.UnitTests.csproj", "{920AE5BE-917E-4A76-9944-BDB5288457C3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{608587E5-BFCB-4BE3-BFA4-EC1B7DD033CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.ComponentTests", "Nulah.AtHome.ComponentTests\Nulah.AtHome.ComponentTests.csproj", "{5BFAC833-B0C1-47E1-AA13-EA2B49B13B27}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{C2C3B228-5031-4556-80F9-C65A8BF94818}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nulah.AtHome.App", "Nulah.AtHome.App", "{DEA4E50B-A3C6-43D3-8E30-1811C8FD4EA6}"
 	ProjectSection(SolutionItems) = preProject
 		..\..\.dockerignore = ..\..\.dockerignore
 		..\..\Dockerfile = ..\..\Dockerfile
+		..\..\docker\Nulah.AtHome.App\.dockerignore = ..\..\docker\Nulah.AtHome.App\.dockerignore
+		..\..\docker\Nulah.AtHome.App\Dockerfile = ..\..\docker\Nulah.AtHome.App\Dockerfile
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nulah.AtHome.ComponentTests", "Nulah.AtHome.ComponentTests\Nulah.AtHome.ComponentTests.csproj", "{5BFAC833-B0C1-47E1-AA13-EA2B49B13B27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,5 +46,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{920AE5BE-917E-4A76-9944-BDB5288457C3} = {78422028-D9A6-41F4-9217-9513F75AC746}
 		{5BFAC833-B0C1-47E1-AA13-EA2B49B13B27} = {78422028-D9A6-41F4-9217-9513F75AC746}
+		{DEA4E50B-A3C6-43D3-8E30-1811C8FD4EA6} = {C2C3B228-5031-4556-80F9-C65A8BF94818}
 	EndGlobalSection
 EndGlobal
