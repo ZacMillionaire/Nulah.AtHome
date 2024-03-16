@@ -1,7 +1,5 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Identity;
-using Nulah.AtHome.Data;
-using Nulah.AtHome.Data.DTO.Events;
+﻿using Nulah.AtHome.Data.DTO.Events;
+using Nulah.AtHome.UnitTests.BasicEvents.Fixtures;
 using Nulah.AtHome.UnitTests.Helpers;
 using Xunit.Abstractions;
 
@@ -169,34 +167,5 @@ public class CreateBasicEventTests : TestBase<CreateBasicEventFixture>
 		Assert.Equal(eventCreationRequest.Description, createdEvent.Description);
 		Assert.Equal(eventCreationRequest.Start, createdEvent.Start);
 		Assert.Equal(eventCreationRequest.End, createdEvent.End);
-	}
-}
-
-public class CreateBasicEventFixture : DatabaseBackedTestFixture
-{
-	private EventManager EventManager => CreateEventManager();
-
-	public static TheoryData<(string description, DateTimeOffset startDate, DateTimeOffset? endDate, List<string>? tags)> EventsToCreate() => new()
-	{
-		(
-			"Test Description", DateTimeOffset.Now, null,
-			new List<string>() { $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}" }
-		),
-		(
-			"A description", DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1),
-			new List<string>() { $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}" }
-		),
-		(
-			"A description for longer text", DateTimeOffset.Now.AddMinutes(1), DateTimeOffset.Now.AddDays(1),
-			new List<string>() { $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}", $"test-{Guid.NewGuid()}" }
-		),
-	};
-
-	public async Task<BasicEventDto> CreateBasicEvent(NewBasicEventRequest basicEventRequest)
-	{
-		var manager = EventManager;
-		using var contextWrapper = DbContextBuilder.Instance.ContextWrapper(manager);
-
-		return await manager.CreateEvent(basicEventRequest);
 	}
 }
