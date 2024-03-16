@@ -7,8 +7,8 @@
     @if (!_showEditForm)
     {
         <div class="event-table-cell">@EventDto.Description</div>
-        <div class="event-table-cell center">@EventDto.Start.ToString("dd/MM/yyyy hh:mmtt")</div>
-        <div class="event-table-cell center">@EventDto.End?.ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell center">@EventDto.Start.ToLocalTime().ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell center">@EventDto.End?.ToLocalTime().ToString("dd/MM/yyyy hh:mmtt")</div>
         <div class="event-table-cell">@string.Join(", ", EventDto.Tags.Select(x => x.Name))</div>
         <div class="event-table-cell center"  style="width: 0.1%">
             <button class="btn btn-primary btn-sm" @onclick="ToggleEditMode">edit</button>

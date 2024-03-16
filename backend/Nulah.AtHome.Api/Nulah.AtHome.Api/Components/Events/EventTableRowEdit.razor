@@ -57,8 +57,8 @@
             Id = EventDto.Id,
             Version = EventDto.Version,
             Description = EventDto.Description,
-            Start = EventDto.Start,
-            End = EventDto.End,
+            Start = EventDto.Start.ToLocalTime(),
+            End = EventDto.End?.ToLocalTime(),
             Tags = EventDto.Tags.Count == 0
                 ? string.Empty
                 : string.Join(",",
