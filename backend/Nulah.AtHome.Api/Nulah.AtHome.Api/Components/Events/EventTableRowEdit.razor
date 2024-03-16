@@ -1,0 +1,99 @@
+﻿@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Models
+
+<EditForm Model="FormData" OnSubmit="OnSubmit" style="display:contents">
+    <fieldset disabled="@FormDisabled" style="display:contents">
+        <DataAnnotationsValidator/>
+        @* <ValidationSummary/> *@
+        @* <span> *@
+        @*     @FormData.GenericErrors *@
+        @* </span> *@
+        <div class="event-table-cell">
+            <ValidationMessage For="() => FormData.Description"/>
+            <span>@FormData.GenericErrors</span>
+            <input @bind="FormData.Description"/>
+        </div>
+        <div class="event-table-cell">
+            <ValidationMessage For="() => FormData.Start"/>
+            <input type="datetime-local" @bind="FormData.Start"/>
+        </div>
+        <div class="event-table-cell">
+            <ValidationMessage For="() => FormData.End"/>
+            <input type="datetime-local" @bind="FormData.End"/>
+        </div>
+        <div class="event-table-cell">
+            <input @bind="FormData.Tags">
+        </div>
+        <div class="event-table-cell" style="width: 0.1%">
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <button class="btn btn-secondary btn-sm" @onclick="FormCancel">Cancel</button>
+            </div>
+        </div>
+    </fieldset>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public BasicEventDto EventDto { get; set; } = new();
+
+    [Parameter]
+    public Func<EventFormData, Task> FormSubmit { get; set; }
+
+    [Parameter]
+    public Action FormCancel { get; set; }
+
+    private EventFormData FormData { get; set; } = new();
+    private bool FormDisabled { get; set; }
+
+    protected override Task OnParametersSetAsync()
+    {
+        ArgumentNullException.ThrowIfNull(FormSubmit);
+        ArgumentNullException.ThrowIfNull(FormCancel);
+
+        FormData = new EventFormData()
+        {
+            Id = EventDto.Id,
+            Version = EventDto.Version,
+            Description = EventDto.Description,
+            Start = EventDto.Start.ToLocalTime(),
+            End = EventDto.End?.ToLocalTime(),
+            Tags = EventDto.Tags.Count == 0
+                ? string.Empty
+                : string.Join(",",
+                    EventDto.Tags
+                        .Select(x => x.Name)
+                )
+        };
+
+        return base.OnParametersSetAsync();
+    }
+
+    private async void OnSubmit(EditContext obj)
+    {
+        FormDisabled = true;
+        FormData.GenericErrors = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            if (obj.Validate())
+            {
+                // something loading state started
+                await FormSubmit(FormData);
+                // something loading state ended
+            }
+        }
+        catch
+        {
+            FormData.GenericErrors = "Something went wrong :(((";
+        }
+        finally
+        {
+            FormDisabled = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+}

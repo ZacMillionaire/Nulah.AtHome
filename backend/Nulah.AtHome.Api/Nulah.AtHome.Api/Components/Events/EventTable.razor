@@ -1,0 +1,72 @@
+﻿@using Nulah.AtHome.Api.Services
+@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Models
+@using Nulah.AtHome.Data
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@using System.Reflection
+@rendermode @(new InteractiveServerRenderMode(false))
+@implements IDisposable
+
+<div class="event-table">
+    <div class="event-table-header-row">
+        <div class="event-table-header">
+            Description
+        </div>
+        <div class="event-table-header">
+            Start
+        </div>
+        <div class="event-table-header">
+            End
+        </div>
+        <div class="event-table-header">
+            Tags
+        </div>
+        <div class="event-table-header"></div>
+    </div>
+    <div class="event-table-body">
+        @foreach (var eventDto in Events)
+        {
+            <EventTableRow EventDto="eventDto"/>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Inject]
+    private IEventService EventService { get; set; }
+
+    private List<BasicEventDto> Events { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(EventService);
+        EventService.EventsUpdated += EventsUpdated;
+        base.OnInitialized();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return base.OnAfterRenderAsync(firstRender);
+
+        // For the first render, pull the latest events that have been loaded.
+        // If the event service has never loaded events before, an empty list will exist.
+        Events = EventService.Events;
+        InvokeAsync(StateHasChanged);
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void EventsUpdated(object? sender, List<BasicEventDto> updatedEventList)
+    {
+        Events = updatedEventList;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        EventService.EventsUpdated -= EventsUpdated;
+    }
+}

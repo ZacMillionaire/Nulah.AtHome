@@ -1,0 +1,32 @@
+﻿<fieldset>
+    <form blazor:onsubmit="1">
+        <ul class="validation-errors">
+            <li class="validation-message">The Description field is required.</li>
+            <li class="validation-message">The Start field is required.</li>
+        </ul>
+        <span></span>
+        <div class="mb-3">
+            <label for="description">Description*</label>
+            <input id="description" class="form-control" blazor:onchange="6"/>
+            <div class="validation-message">The Description field is required.</div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <label for="starttime">Start Time*</label>
+                <input id="starttime" class="form-control" type="datetime-local" blazor:onchange="7"/>
+                <div class="validation-message">The Start field is required.</div>
+            </div>
+            <div class="col">
+                <label for="endtime">End Time</label>
+                <input id="endtime" class="form-control" type="datetime-local" blazor:onchange="8"/>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <label for="tags">Tags</label>
+                <input id="tags" class="form-control" blazor:onchange="9"/>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">submit</button>
+    </form>
+</fieldset>

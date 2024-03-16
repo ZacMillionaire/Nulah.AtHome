@@ -1,0 +1,50 @@
+﻿<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <fieldset>
+                    <form blazor:onsubmit="2">
+                        <span></span>
+                        <div class="mb-3">
+                            <label for="description">Description*</label>
+                            <input id="description" class="form-control" blazor:onchange="11"/>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="starttime">Start Time*</label>
+                                <input id="starttime" class="form-control" type="datetime-local" blazor:onchange="12"/>
+                            </div>
+                            <div class="col">
+                                <label for="endtime">End Time</label>
+                                <input id="endtime" class="form-control" type="datetime-local" blazor:onchange="13"/>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="tags">Tags</label>
+                                <input id="tags" class="form-control" blazor:onchange="14"/>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">submit</button>
+                    </form>
+                </fieldset>
+            </div>
+        </div>
+        <div class="col">
+            <div class="mb-3 p-3 border rounded">
+                <form blazor:onsubmit="1">
+                    <h3>Filter</h3>
+                    <div class="mb-3">
+                        <div class="btn-group" role="group" aria-label="Basic example">
+                            <button type="button" blazor:onclick="8" class="btn btn-outline-secondary">With End Date</button>
+                            <button type="button" blazor:onclick="9" class="btn btn-outline-secondary">Without End Date</button>
+                            <button type="button" blazor:onclick="10" class="btn btn-primary">All</button>
+                        </div>
+                    </div>
+                    <button blazor:onclick="3" class="btn btn-primary">Filter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<h2>Loading...</h2>

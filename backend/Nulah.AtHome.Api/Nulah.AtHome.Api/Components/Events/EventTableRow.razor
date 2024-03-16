@@ -1,0 +1,77 @@
+﻿@using Nulah.AtHome.Data.DTO.Events
+@using Nulah.AtHome.Api.Services
+@using Nulah.AtHome.Api.Models
+@rendermode InteractiveServer
+
+<div class="event-table-row">
+    @if (!_showEditForm)
+    {
+        <div class="event-table-cell">@EventDto.Description</div>
+        <div class="event-table-cell center">@EventDto.Start.ToLocalTime().ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell center">@EventDto.End?.ToLocalTime().ToString("dd/MM/yyyy hh:mmtt")</div>
+        <div class="event-table-cell">@string.Join(", ", EventDto.Tags.Select(x => x.Name))</div>
+        <div class="event-table-cell center"  style="width: 0.1%">
+            <button class="btn btn-primary btn-sm" @onclick="ToggleEditMode">edit</button>
+        </div>
+    }
+    else
+    {
+        <EventTableRowEdit EventDto="@EventDto" FormSubmit="SubmitUpdate" FormCancel="CancelEdit"/>
+    }
+</div>
+
+@code {
+
+    private bool _showEditForm = false;
+
+    [Parameter]
+    public BasicEventDto EventDto { get; set; } = default!;
+
+    [Inject]
+    private IEventService EventService { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(EventService);
+    }
+
+    private void ToggleEditMode()
+    {
+        // Toggling this will trigger the EventForm to receive parameters, so if EventDto is updated
+        _showEditForm = !_showEditForm;
+        StateHasChanged();
+    }
+
+    private async Task SubmitUpdate(EventFormData eventFormData)
+    {
+        var updateBasicEventRequest = new UpdateBasicEventRequest()
+        {
+            Id = EventDto.Id,
+            Version = EventDto.Version,
+            Description = eventFormData.Description,
+            Start = eventFormData.Start,
+            End = eventFormData.End,
+            Tags = string.IsNullOrWhiteSpace(eventFormData.Tags)
+                ? []
+                : eventFormData.Tags.Split(",").ToList()
+        };
+
+        var updatedEvent = await EventService.UpdateEvent(updateBasicEventRequest);
+
+        // This ensures that when the visibility is toggled the eventform receives the updated state
+        EventDto = updatedEvent;
+
+        _showEditForm = false;
+        
+        // TODO: Add a trigger to reload events so criteria filters still apply?
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void CancelEdit()
+    {
+        _showEditForm = false;
+        StateHasChanged();
+    }
+
+}

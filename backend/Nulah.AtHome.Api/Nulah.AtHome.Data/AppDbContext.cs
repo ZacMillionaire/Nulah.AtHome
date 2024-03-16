@@ -17,7 +17,7 @@ public class AppDbContext : DbContext
 	public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
 	{
 	}
-	
+
 	protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
 	{
 		//https://github.com/npgsql/npgsql/issues/4176#issuecomment-1064250712
@@ -25,7 +25,7 @@ public class AppDbContext : DbContext
 			.Properties<DateTimeOffset>()
 			.HaveConversion<DateTimeOffsetConverter>();
 	}
-	
+
 	public override int SaveChanges()
 	{
 		SetCreatedUpdatedForSavingEntities();
@@ -66,7 +66,7 @@ public class AppDbContext : DbContext
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// Method called when building migrations from command line to create a database in a default location.
 	/// <para>
@@ -84,5 +84,7 @@ public class AppDbContext : DbContext
 			options.UseNpgsql("Host=localhost:55432;Database=Nulah.AtHome;Username=postgres;Password=mysecretpassword",
 				x => x.UseNetTopologySuite());
 		}
+
+		options.UseSnakeCaseNamingConvention();
 	}
 }

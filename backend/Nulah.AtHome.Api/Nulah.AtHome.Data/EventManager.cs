@@ -1,9 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nulah.AtHome.Data.Criteria;
 using Nulah.AtHome.Data.DTO;
 using Nulah.AtHome.Data.DTO.Events;
 using Nulah.AtHome.Data.Models;
 using Nulah.AtHome.Data.Models.Events;
+using OpenTelemetry.Trace;
 
 namespace Nulah.AtHome.Data;
 
@@ -11,18 +14,18 @@ public class EventManager
 {
 	private readonly AppDbContext _context;
 	private readonly ILogger _logger;
-	private Guid _instanceId = Guid.NewGuid();
 
 	public EventManager(AppDbContext context, ILogger<EventManager> logger)
 	{
 		_context = context;
 		_logger = logger;
-		_logger.LogDebug("[{instanceId}] EventManager created", _instanceId);
 	}
 
-	public async Task<List<BasicEventDto>> GetEvents()
+	public async Task<List<BasicEventDto>> GetEvents(EventListCriteria? criteria = null)
 	{
-		return await _context.BasicEvents.Select(x => new BasicEventDto()
+		return await _context.BasicEvents
+			.WithCriteria(criteria?.Build())
+			.Select(x => new BasicEventDto()
 			{
 				Description = x.Description,
 				End = x.End,
@@ -48,6 +51,9 @@ public class EventManager
 
 	public async Task<BasicEventDto> CreateEvent(NewBasicEventRequest newBasicEventRequest)
 	{
+		using var updateEvent = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		PopulateActivityTags(updateEvent, newBasicEventRequest);
+
 		ValidateBasicEventRequest(newBasicEventRequest);
 
 		var newEvent = new BasicEvent()
@@ -86,21 +92,103 @@ public class EventManager
 
 	public async Task<BasicEventDto> UpdateEvent(UpdateBasicEventRequest updateBasicEventRequest)
 	{
+		using var updateEvent = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		updateEvent?.SetTag("event.id", updateBasicEventRequest.Id);
+		updateEvent?.SetTag("event.version", updateBasicEventRequest.Version);
+		PopulateActivityTags(updateEvent, updateBasicEventRequest);
+
+		try
+		{
+			return await UpdateEventAsync(updateBasicEventRequest);
+		}
+		catch (Exception ex)
+		{
+			updateEvent?.SetStatus(ActivityStatusCode.Error, ex.Message);
+			updateEvent?.RecordException(ex);
+			throw;
+		}
+	}
+
+	public async Task<BasicEventStatsDto> GetStats()
+	{
+		var events = await _context.BasicEvents
+			.Select(x => new
+			{
+				HasEndDate = x.End == null,
+				HasTags = x.Tags.Count > 0
+			})
+			.ToListAsync();
+
+		var stats = new BasicEventStatsDto()
+		{
+			Total = events.Count,
+			WithTags = events.Count(x => x.HasTags),
+			WithoutTags = events.Count(x => !x.HasTags),
+			WithEndDate = events.Count(x => x.HasEndDate),
+			WithoutEndDate = events.Count(x => !x.HasEndDate),
+		};
+
+		return stats;
+	}
+
+
+	// private Expression<Func<BasicEvent, bool>> BuildEventListCriteria(EventListCriteria? criteria)
+	// {
+	// 	if (criteria == null)
+	// 	{
+	// 		return x => true;
+	// 	}
+	//
+	// 	Expression<Func<BasicEvent, bool>>? baseFunc = null;
+	//
+	// 	if (criteria.HasEventDate.HasValue)
+	// 	{
+	// 		if (criteria.HasEventDate.Value)
+	// 		{
+	// 			baseFunc = baseFunc.And(x => x.End != null);
+	// 		}
+	// 		else
+	// 		{
+	// 			baseFunc = baseFunc.And(x => x.End == null);
+	// 		}
+	// 	}
+	//
+	// 	// Return an "empty" expression if we have a criteria object, but no criteria to act on
+	// 	baseFunc ??= x => true;
+	//
+	// 	if (baseFunc.CanReduce)
+	// 	{
+	// 		baseFunc.Reduce();
+	// 	}
+	//
+	// 	return baseFunc;
+	// }
+
+	private async Task<BasicEventDto> UpdateEventAsync(UpdateBasicEventRequest updateBasicEventRequest)
+	{
+		using var updateActivity = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+
 		ValidateBasicEventRequest(updateBasicEventRequest);
+
+		updateActivity?.AddEvent(new ActivityEvent("Find event by Id and Version", DateTimeOffset.Now));
 
 		var existingEvent = await _context.BasicEvents
 			.Include(basicEvent => basicEvent.Tags)
-			.FirstOrDefaultAsync(x => x.Id == updateBasicEventRequest.Id);
+			.FirstOrDefaultAsync(x =>
+				x.Id == updateBasicEventRequest.Id
+				// this is ugly but I want to make sure that we're definitely getting the version.
+				// If we just load by raw Id then we'll completely sidestep version validation
+				&& x.Version == updateBasicEventRequest.Version
+			);
 
 		if (existingEvent == null)
 		{
-			throw new Exception($"No event found with the id of {updateBasicEventRequest.Id}");
+			throw new Exception($"No event found with the id of {updateBasicEventRequest.Id} and version {updateBasicEventRequest.Version}");
 		}
 
 		existingEvent.Description = updateBasicEventRequest.Description!;
 		existingEvent.Start = updateBasicEventRequest.Start!.Value;
 		existingEvent.End = updateBasicEventRequest.End;
-		existingEvent.Id = existingEvent.Id;
 
 		// Determine new/existing tags as usual
 		var generateTags = FindTags(SanitiseTags(updateBasicEventRequest.Tags));
@@ -121,7 +209,8 @@ public class EventManager
 			.DistinctBy(x => x.Id)
 			.ToList();
 
-		// If the event is updated elsewhere this will throw a concurrency error
+		// If the event is updated elsewhere this will throw a concurrency error, but if we've made it this far we can
+		// be certain we've loaded the most recent version into tracking
 		await _context.SaveChangesAsync();
 
 		return new BasicEventDto()
@@ -155,8 +244,12 @@ public class EventManager
 	/// <returns></returns>
 	private List<Tag> FindTags(List<string> tagList)
 	{
+		using var updateActivity = Telemetry.ActivitySource.StartActivity(ActivityKind.Internal);
+		updateActivity?.SetTag("tags", string.Join(",", tagList));
+
 		if (tagList.Count == 0)
 		{
+			updateActivity?.AddEvent(new ActivityEvent("No tags given", DateTimeOffset.Now));
 			return [];
 		}
 
@@ -206,5 +299,17 @@ public class EventManager
 		{
 			throw new Exception("Start date cannot be exactly on or after end date");
 		}
+	}
+
+	private void PopulateActivityTags(Activity? activity, BasicEventRequest eventRequest)
+	{
+		activity?.SetTag("event.start", eventRequest.Start);
+		activity?.SetTag("event.end", eventRequest.End);
+		activity?.SetTag("event.description", eventRequest.Description);
+		activity?.SetTag("event.tags",
+			eventRequest.Tags is { Count: > 0 }
+				? string.Join(",", eventRequest.Tags)
+				: "[no tags]"
+		);
 	}
 }
